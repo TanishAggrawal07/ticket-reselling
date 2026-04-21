@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Default event image — used on ticket cards when the seller has not
+    uploaded a custom event photo.  Designed to look like a concert stage
+    with a crowd silhouette so every card always has a rich visual.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Background gradient: deep navy → purple, like a lit stage -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#0D1B2A"
+                android:centerColor="#1A1040"
+                android:endColor="#2D1B69"
+                android:angle="135"
+                android:type="linear" />
+        </shape>
+    </item>
+
+    <!-- Spotlight glow — top-centre warm circle -->
+    <item
+        android:gravity="top|center_horizontal"
+        android:top="0dp"
+        android:bottom="60dp"
+        android:left="80dp"
+        android:right="80dp">
+        <shape android:shape="oval">
+            <solid android:color="#33FFD700" />
+        </shape>
+    </item>
+
+    <!-- Second spotlight — slightly offset -->
+    <item
+        android:gravity="top|center_horizontal"
+        android:top="10dp"
+        android:bottom="70dp"
+        android:left="120dp"
+        android:right="40dp">
+        <shape android:shape="oval">
+            <solid android:color="#22FF8C00" />
+        </shape>
+    </item>
+
+    <!-- Stage floor strip at the bottom -->
+    <item
+        android:gravity="bottom"
+        android:top="0dp"
+        android:bottom="0dp"
+        android:height="28dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#1AFFFFFF" />
+        </shape>
+    </item>
+
+</layer-list>

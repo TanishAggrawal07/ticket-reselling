@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/primary_dark">
+
+    <!-- Subtle accent glow at top -->
+    <View
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="-80dp"
+        android:background="@drawable/bg_splash_glow"
+        android:alpha="0.14" />
+
+    <!-- Center content -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:layout_marginBottom="40dp">
+
+        <!-- Logo mark -->
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginBottom="24dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_splash_logo_ring" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="R"
+                android:textColor="@color/accent_blue"
+                android:textSize="44sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- App name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@color/white"
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Tagline -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/splash_tagline"
+            android:textColor="@color/accent_blue_soft"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <!-- Loading indicator at bottom -->
+    <ProgressBar
+        android:id="@+id/splash_progress"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="56dp"
+        android:indeterminateTint="@color/accent_blue" />
+
+</FrameLayout>

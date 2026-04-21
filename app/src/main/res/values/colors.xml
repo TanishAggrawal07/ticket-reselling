@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ReTix Brand — deep navy + electric blue -->
+    <color name="primary_dark">#0A1628</color>
+    <color name="primary_darker">#060E1A</color>
+    <color name="primary_mid">#112240</color>
+    <color name="accent_blue">#2979FF</color>
+    <color name="accent_blue_light">#E3EDFF</color>
+    <color name="accent_blue_soft">#5C9BFF</color>
+    <color name="accent_blue_dim">#1A3A6B</color>
+
+    <!-- Surfaces -->
+    <color name="background_white">#FFFFFF</color>
+    <color name="background_light">#F7F9FC</color>
+    <color name="background_grey">#EEF2F7</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_elevated">#F0F4FA</color>
+
+    <!-- Text -->
+    <color name="text_primary">#0A1628</color>
+    <color name="text_secondary">#4A5568</color>
+    <color name="text_tertiary">#718096</color>
+    <color name="text_hint">#A0AEC0</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_on_dark">#E2E8F0</color>
+
+    <!-- Borders -->
+    <color name="border_light">#E2E8F0</color>
+    <color name="border_medium">#CBD5E0</color>
+    <color name="border_focused">#2979FF</color>
+
+    <!-- Status -->
+    <color name="error_red">#E53E3E</color>
+    <color name="error_red_light">#FFF5F5</color>
+    <color name="success_green">#38A169</color>
+    <color name="success_green_light">#F0FFF4</color>
+    <color name="warning_amber">#744210</color>
+    <color name="warning_amber_light">#FFFBEB</color>
+
+    <!-- Dot Indicators -->
+    <color name="dot_inactive">#CBD5E0</color>
+    <color name="dot_active">#2979FF</color>
+
+    <!-- Wallet card gradient stops -->
+    <color name="wallet_card_start">#0A1628</color>
+    <color name="wallet_card_end">#1A3A6B</color>
+</resources>

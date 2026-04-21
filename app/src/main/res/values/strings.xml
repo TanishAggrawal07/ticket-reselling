@@ -1,0 +1,167 @@
+<resources>
+    <string name="app_name">ReTix</string>
+
+    <!-- Splash Screen -->
+    <string name="splash_tagline">Your Trusted Ticket Marketplace</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Buy &amp; Sell Tickets Easily</string>
+    <string name="onboarding_subtitle_1">Find or resell tickets in seconds with our streamlined platform</string>
+
+    <string name="onboarding_title_2">Secure Transactions</string>
+    <string name="onboarding_subtitle_2">Payments are protected with our trusted escrow system</string>
+
+    <string name="onboarding_title_3">Trusted Marketplace</string>
+    <string name="onboarding_subtitle_3">Verified users ensure safety and authenticity in every deal</string>
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get Started</string>
+
+    <!-- Login -->
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Sign in to continue your ReTix journey</string>
+    <string name="login_email_hint">Email address</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_forgot_password">Forgot Password?</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_signup">Sign Up</string>
+    <string name="login_error_email_empty">Please enter your email</string>
+    <string name="login_error_email_invalid">Please enter a valid email</string>
+    <string name="login_error_password_empty">Please enter your password</string>
+    <string name="login_error_password_short">Password must be at least 6 characters</string>
+
+    <!-- Signup -->
+    <string name="signup_title">Create Account</string>
+    <string name="signup_subtitle">Join ReTix and start trading tickets today</string>
+    <string name="signup_name_hint">Full name</string>
+    <string name="signup_email_hint">Email address</string>
+    <string name="signup_password_hint">Create password</string>
+    <string name="signup_button">Create Account</string>
+    <string name="signup_already_account">Already have an account?</string>
+    <string name="signup_login">Sign In</string>
+    <string name="signup_error_name_empty">Please enter your name</string>
+    <string name="signup_error_email_empty">Please enter your email</string>
+    <string name="signup_error_email_invalid">Please enter a valid email</string>
+    <string name="signup_error_password_empty">Please create a password</string>
+    <string name="signup_error_password_short">Password must be at least 6 characters</string>
+    <string name="signup_success">Account created successfully!</string>
+
+    <!-- Home -->
+    <string name="home_welcome">Welcome to ReTix</string>
+    <string name="home_subtitle">Your trusted ticket marketplace</string>
+    <string name="search_events">Search events...</string>
+    <string name="available_tickets">Available Tickets</string>
+    <string name="no_tickets_found">No tickets found</string>
+    <string name="profile">Profile</string>
+    <string name="sell_ticket">Sell Ticket</string>
+
+    <!-- Ticket Detail -->
+    <string name="seller">Seller</string>
+    <string name="pricing_details">Pricing Details</string>
+    <string name="original_price">Original Price</string>
+    <string name="selling_price">Selling Price</string>
+    <string name="buy_ticket">Secure Ticket</string>
+    <string name="resale_warning">This is a resale ticket. Entry depends on provider verification.</string>
+    <string name="back">Back</string>
+
+    <!-- Sell Ticket -->
+    <string name="list_your_ticket">List Your Ticket</string>
+    <string name="sell_ticket_subtitle">Sell your tickets to verified buyers quickly and securely</string>
+    <string name="event_name">Event Name</string>
+    <string name="hint_event_name">e.g., Coldplay Concert</string>
+    <string name="date">Date \u0026 Time</string>
+    <string name="hint_date">Select date and time</string>
+    <string name="pricing">Pricing</string>
+    <string name="original_price_short">Original Price</string>
+    <string name="selling_price_short">Selling Price</string>
+    <string name="enter_selling_price">Enter selling price</string>
+    <string name="pricing_tips">Pricing Tips</string>
+    <string name="pricing_tips_content">Set a competitive price to sell faster. Tickets priced 10-20%% below market value sell within 48 hours.</string>
+    <string name="list_ticket">List Ticket</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_sell">Sell</string>
+    <string name="nav_wallet">Wallet</string>
+    <string name="nav_profile">Profile</string>
+    <string name="wallet">Wallet</string>
+
+    <!-- Wallet -->
+    <string name="my_purchases">My Purchases</string>
+    <string name="my_sales">My Sales</string>
+    <string name="payment_held">Payment Held</string>
+    <string name="payment_released">Payment Released</string>
+    <string name="no_purchases">No purchases yet</string>
+    <string name="no_sales">No sales yet</string>
+
+    <!-- Profile -->
+    <string name="verified">Verified</string>
+    <string name="my_listings">My Listings</string>
+    <string name="settings">Settings</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="logout">Logout</string>
+    <string name="about_app">About App</string>
+    <string name="rating">Rating</string>
+
+    <!-- Seller Profile -->
+    <string name="seller_profile">Seller Profile</string>
+    <string name="seller_listings">Listings by %1$s</string>
+    <string name="view_seller_profile">View Seller Profile</string>
+
+    <!-- Buy Flow -->
+    <string name="confirm_purchase">Confirm Booking</string>
+    <string name="confirm_buy_message">Confirm your booking for this ticket?</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="purchase_success">Booking Confirmed!</string>
+    <string name="payment_processing_message">Your payment is being processed and will be secured until entry confirmation</string>
+    <string name="confirm_entry">Confirm Entry</string>
+    <string name="confirm_entry_message">Confirm your entry to release payment to the seller. This will add the amount to your available balance.</string>
+    <string name="entry_confirmed">Entry Confirmed!</string>
+    <string name="payment_available_message">Payment has been added to available balance</string>
+    <string name="rate_seller">Rate Seller</string>
+    <string name="rate_message">How was your experience with this seller?</string>
+    <string name="submit_rating">Submit Rating</string>
+    <string name="thank_you_feedback">Thank you for your feedback!</string>
+    <string name="excellent">Excellent</string>
+    <string name="good">Good</string>
+    <string name="average">Average</string>
+    <string name="poor">Poor</string>
+    <string name="very_poor">Very Poor</string>
+
+    <!-- Transaction Status -->
+    <string name="status_processing">Processing</string>
+    <string name="status_available">Available</string>
+    <string name="available_balance">Available Balance</string>
+    <string name="secure_ticket">Secure Ticket</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="about_app_title">About ReTix</string>
+    <string name="about_app_content">ReTix is your trusted ticket marketplace. Buy and sell tickets securely with verified users.</string>
+    <string name="version">Version 1.0.0</string>
+
+    <!-- Pricing Badges -->
+    <string name="you_save">🟢 You save ₹%1$d</string>
+    <string name="limited_availability">🔥 Limited availability – secure your spot now</string>
+    <string name="same_price">Same as original price</string>
+    <string name="recover_amount">🟢 Recover ₹%1$d from your ticket</string>
+
+    <!-- Chat -->
+    <string name="chat_with_seller">Chat with Seller</string>
+    <string name="type_message">Type a message…</string>
+
+    <!-- Ticket File -->
+    <string name="view_ticket">View Ticket</string>
+    <string name="upload_event_image">Upload Event Image</string>
+    <string name="upload_ticket_file">Upload Ticket (PDF or Screenshot)</string>
+
+    <!-- Profile Stats -->
+    <string name="activity_overview">Activity Overview</string>
+    <string name="tickets_sold">Tickets Sold</string>
+    <string name="total_earnings">Total Earnings</string>
+    <string name="active_listings">Active Listings</string>
+    <string name="sales_trend">Sales Trend</string>
+</resources>

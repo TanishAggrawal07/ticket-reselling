@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colors — same in dark mode -->
+    <color name="primary_dark">#0A1628</color>
+    <color name="primary_darker">#060E1A</color>
+    <color name="primary_mid">#112240</color>
+    <color name="accent_blue">#2979FF</color>
+    <color name="accent_blue_light">#1A2A4A</color>
+    <color name="accent_blue_soft">#5C9BFF</color>
+    <color name="accent_blue_dim">#1A3A6B</color>
+
+    <!-- Surfaces — dark mode -->
+    <color name="background_white">#121212</color>
+    <color name="background_light">#1A1A2E</color>
+    <color name="background_grey">#1E1E2E</color>
+    <color name="surface_card">#1E1E2E</color>
+    <color name="surface_elevated">#252535</color>
+
+    <!-- Text — dark mode -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="text_tertiary">#888888</color>
+    <color name="text_hint">#666666</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_on_dark">#E2E8F0</color>
+
+    <!-- Borders — dark mode -->
+    <color name="border_light">#2A2A3E</color>
+    <color name="border_medium">#3A3A5E</color>
+    <color name="border_focused">#2979FF</color>
+
+    <!-- Status — adjusted for dark backgrounds -->
+    <color name="error_red">#FC8181</color>
+    <color name="error_red_light">#2D1515</color>
+    <color name="success_green">#68D391</color>
+    <color name="success_green_light">#1A2D1A</color>
+    <color name="warning_amber">#F6AD55</color>
+    <color name="warning_amber_light">#2D2010</color>
+
+    <!-- Dot indicators — dark mode -->
+    <color name="dot_inactive">#3A3A5E</color>
+    <color name="dot_active">#2979FF</color>
+
+    <!-- Wallet card gradient stops — same in dark mode -->
+    <color name="wallet_card_start">#0A1628</color>
+    <color name="wallet_card_end">#1A3A6B</color>
+</resources>
