@@ -9,6 +9,8 @@ import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class SplashActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME        = "ReTixPrefs";
@@ -20,9 +22,6 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Apply the saved dark mode preference ONCE at app launch.
-        // All other activities inherit this setting automatically — they must
-        // NOT call setDefaultNightMode() themselves, as that triggers recreation
-        // loops and crashes.
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean isDarkMode = prefs.getBoolean(KEY_DARK_MODE, false);
         AppCompatDelegate.setDefaultNightMode(
@@ -38,7 +37,16 @@ public class SplashActivity extends AppCompatActivity {
     private void navigateToNextScreen() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean isFirstTime = prefs.getBoolean(KEY_IS_FIRST_TIME, true);
-        boolean isLoggedIn  = prefs.getBoolean(KEY_IS_LOGGED_IN, false);
+
+        // Use FirebaseAuth as the authoritative session check.
+        // If the Firebase session is still valid the user is logged in,
+        // regardless of what the local SharedPreferences flag says.
+        boolean isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+
+        // Keep the local flag in sync so other parts of the app stay consistent
+        if (!isLoggedIn && prefs.getBoolean(KEY_IS_LOGGED_IN, false)) {
+            prefs.edit().putBoolean(KEY_IS_LOGGED_IN, false).apply();
+        }
 
         Intent intent;
         if (isFirstTime) {

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,7 +28,8 @@ public class SellerProfileActivity extends AppCompatActivity implements TicketAd
     private List<Ticket> sellerTickets;
 
     private String sellerName;
-    private float sellerRating;
+    private String sellerId;   // Firebase UID of the seller
+    private float  sellerRating;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +40,8 @@ public class SellerProfileActivity extends AppCompatActivity implements TicketAd
         overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out);
 
         // Get seller info from intent
-        sellerName = getIntent().getStringExtra("seller_name");
+        sellerName   = getIntent().getStringExtra("seller_name");
+        sellerId     = getIntent().getStringExtra("seller_id");
         sellerRating = getIntent().getFloatExtra("seller_rating", 4.5f);
 
         initViews();
@@ -88,37 +91,28 @@ public class SellerProfileActivity extends AppCompatActivity implements TicketAd
     private void loadSellerTickets() {
         sellerTickets = new ArrayList<>();
 
-        // Load dummy tickets for this seller
-        // In a real app, filter tickets by seller name from database
-        sellerTickets.add(new Ticket(
-                "Coldplay: Music of the Spheres",
-                "Sat, Jan 18 • 7:00 PM",
-                7500,
-                5500,
-                sellerName,
-                sellerRating
-        ));
+        // If we have a real sellerId, fetch from Firebase
+        if (sellerId != null && !sellerId.isEmpty()) {
+            FirebaseManager.getInstance().fetchMyListings(sellerId,
+                    new FirebaseManager.TicketsCallback() {
+                        @Override
+                        public void onSuccess(List<Ticket> tickets) {
+                            sellerTickets = tickets;
+                            ticketAdapter.updateTickets(sellerTickets);
+                            updateEmptyState();
+                        }
 
-        sellerTickets.add(new Ticket(
-                "Imagine Dragons: Mercury Tour",
-                "Thu, Feb 13 • 7:30 PM",
-                6000,
-                4800,
-                sellerName,
-                sellerRating
-        ));
-
-        sellerTickets.add(new Ticket(
-                "The Weeknd: After Hours Tour",
-                "Sat, Mar 8 • 8:00 PM",
-                8000,
-                6500,
-                sellerName,
-                sellerRating
-        ));
-
-        ticketAdapter.updateTickets(sellerTickets);
-        updateEmptyState();
+                        @Override
+                        public void onFailure(String errorMessage) {
+                            Toast.makeText(SellerProfileActivity.this,
+                                    "Could not load listings", Toast.LENGTH_SHORT).show();
+                            updateEmptyState();
+                        }
+                    });
+        } else {
+            // No sellerId — show empty state (dummy data removed)
+            updateEmptyState();
+        }
     }
 
     private void updateEmptyState() {

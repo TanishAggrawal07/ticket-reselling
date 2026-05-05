@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -26,6 +28,7 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -33,35 +36,43 @@ import java.util.Locale;
 
 public class SellFragment extends Fragment {
 
+    private static final String TAG = "SELL";
+
+    // Safety timeout: if neither success nor failure fires within this many ms,
+    // dismiss the loading dialog and re-enable the button automatically.
+    private static final long UPLOAD_TIMEOUT_MS = 120_000; // 2 minutes
+
     // ── Form fields ───────────────────────────────────────────────────────────
-    private EditText etEventName, etDate, etOriginalPrice, etSellingPrice;
-    private TextView tvRecoveryMessage;
+    private EditText       etEventName, etDate, etOriginalPrice, etSellingPrice;
+    private TextView       tvRecoveryMessage;
     private MaterialButton btnSubmit;
-    private View rootView;
+    private View           rootView;
 
     // ── Event image upload ────────────────────────────────────────────────────
-    private LinearLayout layoutEventImagePicker;   // empty-state tap area
-    private FrameLayout  frameEventImage;          // preview container
-    private ImageView    ivEventImagePreview;
+    private LinearLayout   layoutEventImagePicker;
+    private FrameLayout    frameEventImage;
+    private ImageView      ivEventImagePreview;
     private MaterialButton btnChangeEventImage, btnRemoveEventImage;
 
     // ── Ticket file upload ────────────────────────────────────────────────────
-    private LinearLayout layoutTicketFilePicker;   // empty-state tap area
-    private LinearLayout frameTicketFile;          // preview row
-    private TextView     tvTicketFileName;
-    private TextView     tvTicketUploadError;      // validation error message
+    private LinearLayout   layoutTicketFilePicker;
+    private LinearLayout   frameTicketFile;
+    private TextView       tvTicketFileName;
+    private TextView       tvTicketUploadError;
     private MaterialButton btnChangeTicketFile, btnRemoveTicketFile;
 
     // ── State ─────────────────────────────────────────────────────────────────
     private Uri selectedEventImageUri = null;
     private Uri selectedTicketFileUri = null;
 
-    private Calendar selectedDate;
+    private Calendar         selectedDate;
     private SimpleDateFormat dateFormat;
-    private LoadingDialog loadingDialog;
+    private LoadingDialog    loadingDialog;
+    private FirebaseManager  firebaseManager;
 
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private Runnable submitRunnable;
+    // Safety timeout handler — cancels infinite loading
+    private final Handler  timeoutHandler  = new Handler(Looper.getMainLooper());
+    private       Runnable timeoutRunnable = null;
 
     // ── Activity result launchers ─────────────────────────────────────────────
     private ActivityResultLauncher<Intent> eventImageLauncher;
@@ -73,9 +84,13 @@ public class SellFragment extends Fragment {
         return new SellFragment();
     }
 
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        firebaseManager = FirebaseManager.getInstance();
 
         eventImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -107,13 +122,20 @@ public class SellFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        rootView     = view;
+        rootView      = view;
         loadingDialog = new LoadingDialog(requireContext());
         initViews(view);
         setupDatePicker();
         setupPricingListener();
         setupUploadButtons();
         setupSubmitButton();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        cancelTimeout();
+        if (loadingDialog != null && loadingDialog.isShowing()) loadingDialog.dismiss();
     }
 
     // ── View binding ──────────────────────────────────────────────────────────
@@ -126,14 +148,12 @@ public class SellFragment extends Fragment {
         tvRecoveryMessage = view.findViewById(R.id.tv_recovery_message);
         btnSubmit         = view.findViewById(R.id.btn_submit);
 
-        // Event image
         layoutEventImagePicker = view.findViewById(R.id.layout_event_image_picker);
         frameEventImage        = view.findViewById(R.id.frame_event_image);
         ivEventImagePreview    = view.findViewById(R.id.iv_event_image_preview);
         btnChangeEventImage    = view.findViewById(R.id.btn_change_event_image);
         btnRemoveEventImage    = view.findViewById(R.id.btn_remove_event_image);
 
-        // Ticket file
         layoutTicketFilePicker = view.findViewById(R.id.layout_ticket_file_picker);
         frameTicketFile        = view.findViewById(R.id.frame_ticket_file);
         tvTicketFileName       = view.findViewById(R.id.tv_ticket_file_name);
@@ -200,11 +220,8 @@ public class SellFragment extends Fragment {
     // ── Upload buttons ────────────────────────────────────────────────────────
 
     private void setupUploadButtons() {
-        // ── Event image ──
         layoutEventImagePicker.setOnClickListener(v -> pickEventImage());
-
         btnChangeEventImage.setOnClickListener(v -> pickEventImage());
-
         btnRemoveEventImage.setOnClickListener(v -> {
             selectedEventImageUri = null;
             ivEventImagePreview.setImageDrawable(null);
@@ -212,16 +229,12 @@ public class SellFragment extends Fragment {
             layoutEventImagePicker.setVisibility(View.VISIBLE);
         });
 
-        // ── Ticket file ──
         layoutTicketFilePicker.setOnClickListener(v -> pickTicketFile());
-
         btnChangeTicketFile.setOnClickListener(v -> pickTicketFile());
-
         btnRemoveTicketFile.setOnClickListener(v -> {
             selectedTicketFileUri = null;
             frameTicketFile.setVisibility(View.GONE);
             layoutTicketFilePicker.setVisibility(View.VISIBLE);
-            // Restore normal border
             layoutTicketFilePicker.setBackground(
                     requireContext().getDrawable(R.drawable.bg_upload_area));
             tvTicketUploadError.setVisibility(View.GONE);
@@ -241,12 +254,9 @@ public class SellFragment extends Fragment {
         ticketFileLauncher.launch(intent);
     }
 
-    // ── Selection callbacks ───────────────────────────────────────────────────
-
     private void onEventImageSelected(Uri uri) {
         selectedEventImageUri = uri;
         ivEventImagePreview.setImageURI(uri);
-        // Show preview, hide picker
         frameEventImage.setVisibility(View.VISIBLE);
         layoutEventImagePicker.setVisibility(View.GONE);
     }
@@ -254,7 +264,6 @@ public class SellFragment extends Fragment {
     private void onTicketFileSelected(Uri uri) {
         selectedTicketFileUri = uri;
         tvTicketFileName.setText(getFileName(uri));
-        // Show file row, hide picker, clear any error
         frameTicketFile.setVisibility(View.VISIBLE);
         layoutTicketFilePicker.setVisibility(View.GONE);
         tvTicketUploadError.setVisibility(View.GONE);
@@ -264,33 +273,208 @@ public class SellFragment extends Fragment {
 
     private void setupSubmitButton() {
         btnSubmit.setOnClickListener(v -> {
-            if (validateForm()) {
-                loadingDialog.setMessage("Listing your ticket...");
-                loadingDialog.show();
-                submitRunnable = () -> {
-                    if (!isAdded()) return;
-                    loadingDialog.dismiss();
-                    showSuccess("Ticket listed successfully!");
-                    clearForm();
-                };
-                mainHandler.postDelayed(submitRunnable, 1500);
-            }
+            if (validateForm()) submitTicket();
         });
     }
 
-    private void showSuccess(String message) {
-        if (rootView != null) {
-            Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
-                    .setBackgroundTint(requireContext().getColor(R.color.success_green))
-                    .setTextColor(requireContext().getColor(R.color.white))
-                    .show();
+    /**
+     * Submit flow — strictly ordered:
+     *   1. Validate form
+     *   2. Start safety timeout (prevents infinite loading)
+     *   3. If image selected → upload to Cloudinary → wait for secure_url
+     *   4. ONLY after URL received → write ticket to Firebase
+     *   5. On success OR failure → ALWAYS stop loading + re-enable button
+     */
+    private void submitTicket() {
+        FirebaseUser user = firebaseManager.getCurrentUser();
+        if (user == null) {
+            Toast.makeText(requireContext(),
+                    "You must be logged in to list a ticket",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Snapshot all form values NOW before any async work begins.
+        // This prevents clearForm() from wiping them before callbacks fire.
+        final String sellerId   = user.getUid();
+        final String title      = etEventName.getText().toString().trim();
+        final String eventDate  = etDate.getText().toString().trim();
+        final int    price      = parsePrice(etSellingPrice);
+        final String savedName  = requireActivity()
+                .getSharedPreferences(EditProfileActivity.PREFS_NAME,
+                        android.content.Context.MODE_PRIVATE)
+                .getString(EditProfileActivity.KEY_PROFILE_NAME, null);
+        final String sellerName = (savedName != null && !savedName.isEmpty())
+                ? savedName
+                : (user.getDisplayName() != null ? user.getDisplayName() : "Seller");
+
+        // Lock UI
+        setSubmitLoading(true);
+        loadingDialog.setMessage("Preparing...");
+        loadingDialog.show();
+
+        // Start safety timeout — if nothing responds in UPLOAD_TIMEOUT_MS, stop loading
+        startTimeout("Upload timed out. Please check your connection and try again.");
+
+        if (selectedEventImageUri != null) {
+            // ── STEP 1: Upload image to Cloudinary ────────────────────────────
+            loadingDialog.setMessage("Uploading image...");
+            Log.d(TAG, "submitTicket: uploading image uri=" + selectedEventImageUri);
+
+            CloudinaryClient.uploadImage(
+                    requireContext(),
+                    selectedEventImageUri,
+                    new CloudinaryClient.UploadCallback() {
+
+                        @Override
+                        public void onSuccess(String secureUrl) {
+                            // Callback is guaranteed on main thread by CloudinaryClient
+                            if (!isAdded()) {
+                                Log.w(TAG, "onSuccess: fragment detached, aborting");
+                                return;
+                            }
+                            cancelTimeout(); // upload succeeded — cancel the safety timer
+                            Log.d(TAG, "uploadImage: success — secure_url=" + secureUrl);
+
+                            // ── STEP 2: Save to Firebase with the URL ─────────
+                            saveTicketToFirebase(sellerId, sellerName, title,
+                                    eventDate, price, secureUrl);
+                        }
+
+                        @Override
+                        public void onFailure(String errorMessage) {
+                            if (!isAdded()) return;
+                            cancelTimeout();
+                            Log.e(TAG, "uploadImage: failed — " + errorMessage);
+                            // ALWAYS stop loading on failure
+                            stopLoading();
+                            showError("Image upload failed: " + errorMessage);
+                        }
+                    });
+        } else {
+            // No image — go straight to Firebase
+            cancelTimeout(); // no upload step, cancel immediately
+            Log.d(TAG, "submitTicket: no image selected, skipping Cloudinary");
+            saveTicketToFirebase(sellerId, sellerName, title, eventDate, price, "");
         }
     }
 
+    // ── Firebase write ────────────────────────────────────────────────────────
+
+    /**
+     * Writes the ticket to Firebase Realtime Database.
+     * Called ONLY after the Cloudinary URL has been received (or skipped).
+     * ALWAYS stops loading in both success and failure paths.
+     */
+    private void saveTicketToFirebase(String sellerId, String sellerName,
+                                      String title, String eventDate,
+                                      int price, String imageUrl) {
+        if (!isAdded()) return;
+
+        loadingDialog.setMessage("Saving ticket...");
+
+        // Start a fresh timeout for the Firebase write
+        startTimeout("Ticket save timed out. Please try again.");
+
+        Log.d(TAG, "saveTicketToFirebase: title=" + title
+                + " price=" + price
+                + " imageUrl=" + (imageUrl.isEmpty() ? "(none)" : imageUrl)
+                + " sellerId=" + sellerId);
+
+        firebaseManager.saveTicket(
+                title,
+                title,       // description = title
+                price,
+                eventDate,
+                imageUrl,
+                sellerId,
+                sellerName,
+                new FirebaseManager.VoidCallback() {
+
+                    @Override
+                    public void onSuccess() {
+                        if (!isAdded()) return;
+                        cancelTimeout();
+                        Log.d(TAG, "saveTicketToFirebase: success");
+
+                        // ALWAYS stop loading first
+                        stopLoading();
+
+                        Toast.makeText(requireContext(),
+                                "Ticket listed successfully!", Toast.LENGTH_SHORT).show();
+
+                        // Credit wallet — fire-and-forget, doesn't block the UI
+                        if (price > 0) {
+                            firebaseManager.addMoney(
+                                    sellerId,
+                                    price,
+                                    "Ticket listed: " + title,
+                                    new FirebaseManager.VoidCallback() {
+                                        @Override public void onSuccess() {
+                                            Log.d("WALLET", "Credited ₹" + price
+                                                    + " for: " + title);
+                                        }
+                                        @Override public void onFailure(String err) {
+                                            Log.e("WALLET", "Credit failed: " + err);
+                                        }
+                                    });
+                        }
+
+                        clearForm();
+                        navigateToHome();
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        if (!isAdded()) return;
+                        cancelTimeout();
+                        Log.e(TAG, "saveTicketToFirebase: failed — " + errorMessage);
+
+                        // ALWAYS stop loading on failure
+                        stopLoading();
+                        showError("Failed to save ticket: " + errorMessage);
+                    }
+                });
+    }
+
+    // ── Timeout helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Starts a safety timeout. If neither success nor failure fires within
+     * UPLOAD_TIMEOUT_MS, the loading is stopped and an error is shown.
+     * Calling startTimeout() again replaces any existing timeout.
+     */
+    private void startTimeout(String timeoutMessage) {
+        cancelTimeout();
+        timeoutRunnable = () -> {
+            if (!isAdded()) return;
+            Log.e(TAG, "TIMEOUT: " + timeoutMessage);
+            stopLoading();
+            showError(timeoutMessage);
+        };
+        timeoutHandler.postDelayed(timeoutRunnable, UPLOAD_TIMEOUT_MS);
+    }
+
+    /** Cancels the pending timeout (call when a callback fires normally). */
+    private void cancelTimeout() {
+        if (timeoutRunnable != null) {
+            timeoutHandler.removeCallbacks(timeoutRunnable);
+            timeoutRunnable = null;
+        }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+
+    private void navigateToHome() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).switchToHome();
+        }
+    }
+
+    // ── Validation ────────────────────────────────────────────────────────────
+
     private boolean validateForm() {
         boolean valid = true;
-
-        // Clear previous ticket upload error
         tvTicketUploadError.setVisibility(View.GONE);
 
         if (etEventName.getText().toString().trim().isEmpty()) {
@@ -307,8 +491,14 @@ public class SellFragment extends Fragment {
             valid = false;
         } else {
             try {
-                if (Integer.parseInt(origStr) <= 0) { etOriginalPrice.setError("Enter a valid price"); valid = false; }
-            } catch (NumberFormatException e) { etOriginalPrice.setError("Enter a valid price"); valid = false; }
+                if (Integer.parseInt(origStr) <= 0) {
+                    etOriginalPrice.setError("Enter a valid price");
+                    valid = false;
+                }
+            } catch (NumberFormatException e) {
+                etOriginalPrice.setError("Enter a valid price");
+                valid = false;
+            }
         }
         String sellStr = etSellingPrice.getText().toString().trim();
         if (sellStr.isEmpty()) {
@@ -316,20 +506,42 @@ public class SellFragment extends Fragment {
             valid = false;
         } else {
             try {
-                if (Integer.parseInt(sellStr) <= 0) { etSellingPrice.setError("Enter a valid price"); valid = false; }
-            } catch (NumberFormatException e) { etSellingPrice.setError("Enter a valid price"); valid = false; }
+                if (Integer.parseInt(sellStr) <= 0) {
+                    etSellingPrice.setError("Enter a valid price");
+                    valid = false;
+                }
+            } catch (NumberFormatException e) {
+                etSellingPrice.setError("Enter a valid price");
+                valid = false;
+            }
         }
-
-        // Ticket file is MANDATORY
         if (selectedTicketFileUri == null) {
             tvTicketUploadError.setVisibility(View.VISIBLE);
-            // Scroll hint: highlight the picker area border
             layoutTicketFilePicker.setBackground(
                     requireContext().getDrawable(R.drawable.bg_upload_area_error));
             valid = false;
         }
-
         return valid;
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────────
+
+    /**
+     * Stops all loading indicators and re-enables the submit button.
+     * Called in EVERY success and failure path — no exceptions.
+     */
+    private void stopLoading() {
+        if (loadingDialog != null && loadingDialog.isShowing()) {
+            loadingDialog.dismiss();
+        }
+        setSubmitLoading(false);
+    }
+
+    private void setSubmitLoading(boolean loading) {
+        if (btnSubmit != null) {
+            btnSubmit.setEnabled(!loading);
+            btnSubmit.setAlpha(loading ? 0.6f : 1.0f);
+        }
     }
 
     private void clearForm() {
@@ -340,13 +552,11 @@ public class SellFragment extends Fragment {
         tvRecoveryMessage.setText(getString(R.string.enter_selling_price));
         tvRecoveryMessage.setTextColor(requireContext().getColor(R.color.text_secondary));
 
-        // Reset event image
         selectedEventImageUri = null;
         ivEventImagePreview.setImageDrawable(null);
         frameEventImage.setVisibility(View.GONE);
         layoutEventImagePicker.setVisibility(View.VISIBLE);
 
-        // Reset ticket file
         selectedTicketFileUri = null;
         frameTicketFile.setVisibility(View.GONE);
         layoutTicketFilePicker.setVisibility(View.VISIBLE);
@@ -355,7 +565,22 @@ public class SellFragment extends Fragment {
         tvTicketUploadError.setVisibility(View.GONE);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    private void showError(String message) {
+        if (rootView != null && isAdded()) {
+            Snackbar.make(rootView, message, Snackbar.LENGTH_LONG)
+                    .setBackgroundTint(requireContext().getColor(R.color.error_red))
+                    .setTextColor(requireContext().getColor(R.color.white))
+                    .show();
+        }
+    }
+
+    private int parsePrice(EditText et) {
+        try {
+            return Integer.parseInt(et.getText().toString().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
 
     private String getFileName(Uri uri) {
         String path = uri.getPath();
@@ -364,13 +589,5 @@ public class SellFragment extends Fragment {
             if (cut != -1) return path.substring(cut + 1);
         }
         return "ticket_file";
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        // Cancel pending callbacks and dismiss dialog to prevent leaks
-        if (submitRunnable != null) mainHandler.removeCallbacks(submitRunnable);
-        if (loadingDialog != null && loadingDialog.isShowing()) loadingDialog.dismiss();
     }
 }

@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -128,6 +129,10 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void logout() {
+        // Sign out from Firebase so the session token is invalidated
+        FirebaseAuth.getInstance().signOut();
+
+        // Clear the local login flag
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         prefs.edit().putBoolean(KEY_IS_LOGGED_IN, false).apply();
 

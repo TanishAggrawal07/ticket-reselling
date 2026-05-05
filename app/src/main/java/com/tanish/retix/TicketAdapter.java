@@ -115,26 +115,8 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                         String.valueOf(ticket.getSellerName().charAt(0)).toUpperCase());
             }
 
-            // ── Event image with guaranteed fallback ──────────────────────────
-            boolean hasCustomImage = false;
-
-            if (ticket.getEventImageUri() != null && !ticket.getEventImageUri().isEmpty()) {
-                // User-uploaded image (URI string)
-                try {
-                    ivEventImage.setImageURI(Uri.parse(ticket.getEventImageUri()));
-                    hasCustomImage = true;
-                } catch (Exception e) {
-                    // URI no longer accessible — fall through to smart default
-                }
-            }
-
-            if (!hasCustomImage) {
-                // Use smart keyword-based image selection — never blank
-                ivEventImage.setImageResource(ticket.getSmartImageResId());
-            }
-
-            // Show the subtle "No event image" label only when using a default
-            tvNoImageLabel.setVisibility(hasCustomImage ? View.GONE : View.VISIBLE);
+            // ── Event image ───────────────────────────────────────────────────
+            loadEventImage(ticket);
 
             // ── Smart pricing badge ───────────────────────────────────────────
             if (ticket.isDiscounted()) {
@@ -144,7 +126,6 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                         itemView.getContext().getColor(R.color.success_green));
                 tvOriginalPrice.setPaintFlags(
                         tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-
             } else if (ticket.getSellingPrice() > ticket.getOriginalPrice()) {
                 tvPricingBadge.setText("🔥 Limited availability – secure your spot now");
                 tvPricingBadge.setBackgroundResource(R.drawable.bg_pricing_badge_urgent);
@@ -152,7 +133,6 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                         itemView.getContext().getColor(android.R.color.holo_orange_dark));
                 tvOriginalPrice.setPaintFlags(
                         tvOriginalPrice.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-
             } else {
                 tvPricingBadge.setText("Same as original price");
                 tvPricingBadge.setBackgroundResource(R.drawable.bg_pricing_badge);
@@ -161,6 +141,73 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 tvOriginalPrice.setPaintFlags(
                         tvOriginalPrice.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             }
+        }
+
+        /**
+         * Image loading priority:
+         *   1. Cloudinary / HTTPS URL (from Firebase DB imageUrl field)
+         *   2. Local content URI (pre-upload preview)
+         *   3. Smart keyword-based drawable fallback
+         */
+        private void loadEventImage(Ticket ticket) {
+            String imageUrl = ticket.getEventImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                loadFromHttpUrl(imageUrl, ticket);
+                tvNoImageLabel.setVisibility(View.GONE);
+                return;
+            }
+
+            String localUri = ticket.getEventImageUri();
+            if (localUri != null && !localUri.isEmpty()) {
+                try {
+                    ivEventImage.setImageURI(Uri.parse(localUri));
+                    tvNoImageLabel.setVisibility(View.GONE);
+                    return;
+                } catch (Exception ignored) {}
+            }
+
+            // Smart drawable fallback — never blank
+            ivEventImage.setImageResource(ticket.getSmartImageResId());
+            tvNoImageLabel.setVisibility(View.VISIBLE);
+        }
+
+        /**
+         * Loads an image from any HTTPS URL (Cloudinary or Firebase Storage download URL)
+         * on a background thread. Falls back to the smart drawable on failure.
+         */
+        private void loadFromHttpUrl(String url, Ticket ticket) {
+            new Thread(() -> {
+                try {
+                    java.net.URL imageUrl = new java.net.URL(url);
+                    java.net.HttpURLConnection conn =
+                            (java.net.HttpURLConnection) imageUrl.openConnection();
+                    conn.setConnectTimeout(10_000);
+                    conn.setReadTimeout(15_000);
+                    conn.setDoInput(true);
+                    conn.connect();
+                    java.io.InputStream input = conn.getInputStream();
+                    android.graphics.Bitmap bmp =
+                            android.graphics.BitmapFactory.decodeStream(input);
+                    input.close();
+
+                    // Post result back to the main thread
+                    if (bmp != null) {
+                        android.os.Handler mainHandler =
+                                new android.os.Handler(android.os.Looper.getMainLooper());
+                        mainHandler.post(() -> ivEventImage.setImageBitmap(bmp));
+                    } else {
+                        android.os.Handler mainHandler =
+                                new android.os.Handler(android.os.Looper.getMainLooper());
+                        mainHandler.post(() ->
+                                ivEventImage.setImageResource(ticket.getSmartImageResId()));
+                    }
+                } catch (Exception e) {
+                    android.os.Handler mainHandler =
+                            new android.os.Handler(android.os.Looper.getMainLooper());
+                    mainHandler.post(() ->
+                            ivEventImage.setImageResource(ticket.getSmartImageResId()));
+                }
+            }).start();
         }
     }
 }

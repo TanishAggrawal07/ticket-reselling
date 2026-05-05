@@ -85,8 +85,11 @@ public class TicketDetailActivity extends AppCompatActivity {
     }
 
     private void bindData() {
-        // Event image
-        if (ticket.getEventImageUri() != null && !ticket.getEventImageUri().isEmpty()) {
+        // Event image — priority: Firebase URL → local URI → drawable → placeholder
+        String imageUrl = ticket.getEventImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            loadImageFromStorage(imageUrl);
+        } else if (ticket.getEventImageUri() != null && !ticket.getEventImageUri().isEmpty()) {
             try {
                 ivEventImage.setImageURI(Uri.parse(ticket.getEventImageUri()));
             } catch (Exception e) {
@@ -95,7 +98,7 @@ public class TicketDetailActivity extends AppCompatActivity {
         } else if (ticket.getEventImageResId() != 0) {
             ivEventImage.setImageResource(ticket.getEventImageResId());
         } else {
-            setPlaceholderImage();
+            ivEventImage.setImageResource(ticket.getSmartImageResId());
         }
 
         tvEventName.setText(ticket.getEventName());
@@ -139,6 +142,59 @@ public class TicketDetailActivity extends AppCompatActivity {
         ivEventImage.setImageResource(R.drawable.bg_event_placeholder);
     }
 
+    private void loadImageFromStorage(String url) {
+        // Cloudinary URLs are plain HTTPS — load them on a background thread
+        // using Android's built-in BitmapFactory via OkHttp (already a dependency).
+        // Firebase Storage SDK only works with gs:// or firebasestorage.googleapis.com URLs.
+        if (url.contains("res.cloudinary.com") || !url.startsWith("gs://")) {
+            // Load via background thread to avoid blocking the main thread
+            new Thread(() -> {
+                try {
+                    java.net.URL imageUrl = new java.net.URL(url);
+                    java.net.HttpURLConnection connection =
+                            (java.net.HttpURLConnection) imageUrl.openConnection();
+                    connection.setDoInput(true);
+                    connection.connect();
+                    java.io.InputStream input = connection.getInputStream();
+                    android.graphics.Bitmap bmp =
+                            android.graphics.BitmapFactory.decodeStream(input);
+                    input.close();
+                    if (bmp != null) {
+                        runOnUiThread(() -> ivEventImage.setImageBitmap(bmp));
+                    } else {
+                        runOnUiThread(() ->
+                                ivEventImage.setImageResource(ticket.getSmartImageResId()));
+                    }
+                } catch (Exception e) {
+                    runOnUiThread(() ->
+                            ivEventImage.setImageResource(ticket.getSmartImageResId()));
+                }
+            }).start();
+            return;
+        }
+
+        // Firebase Storage gs:// URL
+        try {
+            com.google.firebase.storage.StorageReference ref =
+                    com.google.firebase.storage.FirebaseStorage.getInstance()
+                            .getReferenceFromUrl(url);
+            ref.getBytes(5 * 1024 * 1024)
+                    .addOnSuccessListener(bytes -> {
+                        android.graphics.Bitmap bmp =
+                                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        if (bmp != null) {
+                            ivEventImage.setImageBitmap(bmp);
+                        } else {
+                            ivEventImage.setImageResource(ticket.getSmartImageResId());
+                        }
+                    })
+                    .addOnFailureListener(e ->
+                            ivEventImage.setImageResource(ticket.getSmartImageResId()));
+        } catch (Exception e) {
+            ivEventImage.setImageResource(ticket.getSmartImageResId());
+        }
+    }
+
     private void setupListeners() {
         btnBack.setOnClickListener(v -> {
             finish();
@@ -149,15 +205,21 @@ public class TicketDetailActivity extends AppCompatActivity {
         tvSellerName.setOnClickListener(v -> {
             Intent intent = new Intent(this, SellerProfileActivity.class);
             intent.putExtra("seller_name", ticket.getSellerName());
+            intent.putExtra("seller_id",   ticket.getSellerId());
             intent.putExtra("seller_rating", ticket.getRating());
             startActivity(intent);
             overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out);
         });
 
-        // Chat with seller
+        // Chat with seller — pass both name and sellerId
         btnChat.setOnClickListener(v -> {
             Intent intent = new Intent(this, ChatActivity.class);
             intent.putExtra("seller_name", ticket.getSellerName());
+            // Pass sellerId so ChatActivity can build the correct chat room ID
+            String sellerId = ticket.getSellerId();
+            if (sellerId != null && !sellerId.isEmpty()) {
+                intent.putExtra("seller_id", sellerId);
+            }
             startActivity(intent);
             overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out);
         });
@@ -258,13 +320,29 @@ public class TicketDetailActivity extends AppCompatActivity {
     // ─── View Ticket File ─────────────────────────────────────────────────────
 
     private void openTicketFile() {
-        String fileUri = ticket.getTicketFileUri();
-        if (fileUri == null || fileUri.isEmpty()) {
+        // Prefer the remote Firebase Storage URL; fall back to local URI
+        String fileRef = ticket.getBestTicketFileRef();
+        if (fileRef == null || fileRef.isEmpty()) {
             Toast.makeText(this, "No ticket file attached", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // If it's a Firebase Storage URL (starts with "https://"), open directly
+        if (fileRef.startsWith("https://")) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(fileRef));
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(intent, "Open Ticket"));
+            } catch (Exception e) {
+                Toast.makeText(this, "Cannot open ticket file", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        // Local content URI
         try {
-            Uri uri = Uri.parse(fileUri);
+            Uri uri = Uri.parse(fileRef);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(uri, "*/*");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);

@@ -1,121 +1,209 @@
 package com.tanish.retix;
 
-import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Ticket implements Parcelable {
+
+    // ── Core fields (Firestore + local) ───────────────────────────────────────
+    private String firestoreId;     // Firestore document ID
     private String eventName;
-    private String date;
-    private int originalPrice;
-    private int sellingPrice;
+    private String date;            // display string e.g. "Sat, Jan 18 • 7:00 PM"
+    private String eventDate;       // ISO date string for sorting
+    private int    originalPrice;
+    private int    sellingPrice;
     private String sellerName;
-    private float rating;
+    private String sellerId;        // Firebase Auth UID of the seller
+    private float  rating;
+    private String status;          // "available" | "sold"
 
-    // New fields for image and file support
-    private int eventImageResId;   // drawable resource id for dummy event image
-    private String eventImageUri;  // URI string for user-picked image
-    private String ticketFileUri;  // URI string for uploaded ticket PDF/image
+    // ── Image / file fields ───────────────────────────────────────────────────
+    private int    eventImageResId;  // local drawable fallback (dummy data)
+    private String eventImageUri;    // local URI (picked from gallery, pre-upload)
+    private String eventImageUrl;    // Firebase Storage download URL (after upload)
+    private String ticketFileUri;    // local URI (picked from device, pre-upload)
+    private String ticketFileUrl;    // Firebase Storage download URL (after upload)
 
+    // ── Status constants ──────────────────────────────────────────────────────
+    public static final String STATUS_AVAILABLE = "available";
+    public static final String STATUS_SOLD      = "sold";
+
+    // ── Constructors ──────────────────────────────────────────────────────────
+
+    /** Minimal constructor — used for dummy/local data */
     public Ticket(String eventName, String date, int originalPrice, int sellingPrice,
                   String sellerName, float rating) {
-        this.eventName = eventName;
-        this.date = date;
-        this.originalPrice = originalPrice;
-        this.sellingPrice = sellingPrice;
-        this.sellerName = sellerName;
-        this.rating = rating;
+        this.eventName      = eventName;
+        this.date           = date;
+        this.originalPrice  = originalPrice;
+        this.sellingPrice   = sellingPrice;
+        this.sellerName     = sellerName;
+        this.rating         = rating;
+        this.status         = STATUS_AVAILABLE;
         this.eventImageResId = 0;
-        this.eventImageUri = null;
-        this.ticketFileUri = null;
     }
 
+    /** Constructor with local drawable resource (dummy data with image) */
     public Ticket(String eventName, String date, int originalPrice, int sellingPrice,
                   String sellerName, float rating, int eventImageResId) {
         this(eventName, date, originalPrice, sellingPrice, sellerName, rating);
         this.eventImageResId = eventImageResId;
     }
 
-    protected Ticket(Parcel in) {
-        eventName = in.readString();
-        date = in.readString();
-        originalPrice = in.readInt();
-        sellingPrice = in.readInt();
-        sellerName = in.readString();
-        rating = in.readFloat();
-        eventImageResId = in.readInt();
-        eventImageUri = in.readString();
-        ticketFileUri = in.readString();
+    /** Full constructor — used when building from a Firestore document */
+    public Ticket(String firestoreId, String eventName, String date, String eventDate,
+                  int originalPrice, int sellingPrice,
+                  String sellerName, String sellerId, float rating,
+                  String status, String eventImageUrl, String ticketFileUrl) {
+        this.firestoreId    = firestoreId;
+        this.eventName      = eventName;
+        this.date           = date;
+        this.eventDate      = eventDate;
+        this.originalPrice  = originalPrice;
+        this.sellingPrice   = sellingPrice;
+        this.sellerName     = sellerName;
+        this.sellerId       = sellerId;
+        this.rating         = rating;
+        this.status         = status;
+        this.eventImageUrl  = eventImageUrl;
+        this.ticketFileUrl  = ticketFileUrl;
+        this.eventImageResId = 0;
     }
+
+    // ── Parcelable ────────────────────────────────────────────────────────────
+
+    protected Ticket(Parcel in) {
+        firestoreId      = in.readString();
+        eventName        = in.readString();
+        date             = in.readString();
+        eventDate        = in.readString();
+        originalPrice    = in.readInt();
+        sellingPrice     = in.readInt();
+        sellerName       = in.readString();
+        sellerId         = in.readString();
+        rating           = in.readFloat();
+        status           = in.readString();
+        eventImageResId  = in.readInt();
+        eventImageUri    = in.readString();
+        eventImageUrl    = in.readString();
+        ticketFileUri    = in.readString();
+        ticketFileUrl    = in.readString();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(firestoreId);
+        dest.writeString(eventName);
+        dest.writeString(date);
+        dest.writeString(eventDate);
+        dest.writeInt(originalPrice);
+        dest.writeInt(sellingPrice);
+        dest.writeString(sellerName);
+        dest.writeString(sellerId);
+        dest.writeFloat(rating);
+        dest.writeString(status);
+        dest.writeInt(eventImageResId);
+        dest.writeString(eventImageUri);
+        dest.writeString(eventImageUrl);
+        dest.writeString(ticketFileUri);
+        dest.writeString(ticketFileUrl);
+    }
+
+    @Override
+    public int describeContents() { return 0; }
 
     public static final Creator<Ticket> CREATOR = new Creator<Ticket>() {
-        @Override
-        public Ticket createFromParcel(Parcel in) {
-            return new Ticket(in);
-        }
-
-        @Override
-        public Ticket[] newArray(int size) {
-            return new Ticket[size];
-        }
+        @Override public Ticket createFromParcel(Parcel in) { return new Ticket(in); }
+        @Override public Ticket[] newArray(int size)        { return new Ticket[size]; }
     };
 
-    // --- Getters & Setters ---
+    // ── Getters & Setters ─────────────────────────────────────────────────────
 
-    public String getEventName() { return eventName; }
-    public void setEventName(String eventName) { this.eventName = eventName; }
+    public String getFirestoreId()                          { return firestoreId; }
+    public void   setFirestoreId(String firestoreId)        { this.firestoreId = firestoreId; }
 
-    public String getDate() { return date; }
-    public void setDate(String date) { this.date = date; }
+    public String getEventName()                            { return eventName; }
+    public void   setEventName(String eventName)            { this.eventName = eventName; }
 
-    public int getOriginalPrice() { return originalPrice; }
-    public void setOriginalPrice(int originalPrice) { this.originalPrice = originalPrice; }
+    public String getDate()                                 { return date; }
+    public void   setDate(String date)                      { this.date = date; }
 
-    public int getSellingPrice() { return sellingPrice; }
-    public void setSellingPrice(int sellingPrice) { this.sellingPrice = sellingPrice; }
+    public String getEventDate()                            { return eventDate; }
+    public void   setEventDate(String eventDate)            { this.eventDate = eventDate; }
 
-    public String getSellerName() { return sellerName; }
-    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
+    public int    getOriginalPrice()                        { return originalPrice; }
+    public void   setOriginalPrice(int originalPrice)       { this.originalPrice = originalPrice; }
 
-    public float getRating() { return rating; }
-    public void setRating(float rating) { this.rating = rating; }
+    public int    getSellingPrice()                         { return sellingPrice; }
+    public void   setSellingPrice(int sellingPrice)         { this.sellingPrice = sellingPrice; }
 
-    public int getEventImageResId() { return eventImageResId; }
-    public void setEventImageResId(int eventImageResId) { this.eventImageResId = eventImageResId; }
+    public String getSellerName()                           { return sellerName; }
+    public void   setSellerName(String sellerName)          { this.sellerName = sellerName; }
 
-    public String getEventImageUri() { return eventImageUri; }
-    public void setEventImageUri(String eventImageUri) { this.eventImageUri = eventImageUri; }
+    public String getSellerId()                             { return sellerId; }
+    public void   setSellerId(String sellerId)              { this.sellerId = sellerId; }
+
+    public float  getRating()                               { return rating; }
+    public void   setRating(float rating)                   { this.rating = rating; }
+
+    public String getStatus()                               { return status; }
+    public void   setStatus(String status)                  { this.status = status; }
+
+    public int    getEventImageResId()                      { return eventImageResId; }
+    public void   setEventImageResId(int eventImageResId)   { this.eventImageResId = eventImageResId; }
+
+    public String getEventImageUri()                        { return eventImageUri; }
+    public void   setEventImageUri(String eventImageUri)    { this.eventImageUri = eventImageUri; }
+
+    public String getEventImageUrl()                        { return eventImageUrl; }
+    public void   setEventImageUrl(String eventImageUrl)    { this.eventImageUrl = eventImageUrl; }
+
+    public String getTicketFileUri()                        { return ticketFileUri; }
+    public void   setTicketFileUri(String ticketFileUri)    { this.ticketFileUri = ticketFileUri; }
+
+    public String getTicketFileUrl()                        { return ticketFileUrl; }
+    public void   setTicketFileUrl(String ticketFileUrl)    { this.ticketFileUrl = ticketFileUrl; }
+
+    // ── Convenience helpers ───────────────────────────────────────────────────
 
     public boolean hasEventImage() {
-        return eventImageResId != 0 || (eventImageUri != null && !eventImageUri.isEmpty());
+        return eventImageResId != 0
+                || (eventImageUri  != null && !eventImageUri.isEmpty())
+                || (eventImageUrl  != null && !eventImageUrl.isEmpty());
     }
-
-    public String getTicketFileUri() { return ticketFileUri; }
-    public void setTicketFileUri(String ticketFileUri) { this.ticketFileUri = ticketFileUri; }
 
     public boolean hasTicketFile() {
-        return ticketFileUri != null && !ticketFileUri.isEmpty();
+        return (ticketFileUri != null && !ticketFileUri.isEmpty())
+                || (ticketFileUrl != null && !ticketFileUrl.isEmpty());
     }
 
+    /** Best ticket file reference: prefer the remote URL, fall back to local URI */
+    public String getBestTicketFileRef() {
+        if (ticketFileUrl != null && !ticketFileUrl.isEmpty()) return ticketFileUrl;
+        return ticketFileUri;
+    }
+
+    public boolean isAvailable() {
+        return STATUS_AVAILABLE.equals(status);
+    }
+
+    // ── Business logic ────────────────────────────────────────────────────────
+
+    public int     getSavings()    { return originalPrice - sellingPrice; }
+    public boolean isDiscounted()  { return sellingPrice < originalPrice; }
+
+    // ── Smart default image (keyword-based) ───────────────────────────────────
+
     /**
-     * Returns the best drawable resource ID to display on the ticket card.
-     *
-     * Priority:
-     *   1. Explicitly set eventImageResId (dummy data or seller-assigned drawable)
-     *   2. Keyword match on the event name → category-specific gradient
-     *   3. Generic default_event_image as the final fallback
-     *
-     * This ensures every card always shows a visually appropriate image.
+     * Returns the best drawable resource ID for the ticket card banner.
+     * Priority: explicit resId → keyword match → generic fallback.
      */
     public int getSmartImageResId() {
-        // 1. Explicit drawable already assigned
         if (eventImageResId != 0) return eventImageResId;
 
-        // 2. Keyword-based category detection
         if (eventName != null) {
             String lower = eventName.toLowerCase();
 
-            // Sports — cricket, football, IPL, FIFA, NBA, tennis, kabaddi, etc.
             if (lower.contains("ipl") || lower.contains("cricket")
                     || lower.contains("football") || lower.contains("soccer")
                     || lower.contains("nba") || lower.contains("tennis")
@@ -125,105 +213,55 @@ public class Ticket implements Parcelable {
                     || lower.contains("grand prix") || lower.contains("f1")
                     || lower.contains("sport") || lower.contains("stadium")
                     || lower.contains("rcb") || lower.contains("csk")
-                    || lower.contains("mi ") || lower.contains("kkr")) {
+                    || lower.contains("mi ") || lower.contains("kkr"))
                 return R.drawable.bg_event_sports;
-            }
 
-            // Festival / EDM / rave / sunburn / tomorrowland
             if (lower.contains("festival") || lower.contains("sunburn")
                     || lower.contains("tomorrowland") || lower.contains("edm")
                     || lower.contains("rave") || lower.contains("vh1")
                     || lower.contains("lollapalooza") || lower.contains("coachella")
-                    || lower.contains("nh7") || lower.contains("weekender")) {
+                    || lower.contains("nh7") || lower.contains("weekender"))
                 return R.drawable.bg_event_festival;
-            }
 
-            // Stand-up comedy / comedy show / open mic
             if (lower.contains("comedy") || lower.contains("stand-up")
                     || lower.contains("standup") || lower.contains("open mic")
                     || lower.contains("laugh") || lower.contains("kapil")
                     || lower.contains("zakir") || lower.contains("biswa")
-                    || lower.contains("kunal kamra") || lower.contains("roast")) {
+                    || lower.contains("kunal kamra") || lower.contains("roast"))
                 return R.drawable.bg_event_standup;
-            }
 
-            // Theatre / drama / play / musical
             if (lower.contains("theatre") || lower.contains("theater")
                     || lower.contains("drama") || lower.contains("play")
                     || lower.contains("musical") || lower.contains("opera")
-                    || lower.contains("ballet") || lower.contains("broadway")
-                    || lower.contains("mime") || lower.contains("puppet")) {
+                    || lower.contains("ballet") || lower.contains("broadway"))
                 return R.drawable.bg_event_theatre;
-            }
 
-            // Tech / conference / summit / hackathon / startup
             if (lower.contains("tech") || lower.contains("conference")
                     || lower.contains("summit") || lower.contains("hackathon")
                     || lower.contains("startup") || lower.contains("devfest")
-                    || lower.contains("google i/o") || lower.contains("wwdc")
-                    || lower.contains("workshop") || lower.contains("seminar")
-                    || lower.contains("expo") || lower.contains("conclave")) {
+                    || lower.contains("workshop") || lower.contains("seminar"))
                 return R.drawable.bg_event_tech;
-            }
 
-            // Food / culinary / food festival / food fair
             if (lower.contains("food") || lower.contains("culinary")
                     || lower.contains("chef") || lower.contains("taste")
-                    || lower.contains("eat") || lower.contains("dining")
-                    || lower.contains("bbq") || lower.contains("barbeque")
-                    || lower.contains("wine") || lower.contains("beer")) {
+                    || lower.contains("eat") || lower.contains("dining"))
                 return R.drawable.bg_event_food;
-            }
 
-            // Art / exhibition / gallery / museum
             if (lower.contains("art") || lower.contains("exhibition")
-                    || lower.contains("gallery") || lower.contains("museum")
-                    || lower.contains("exhibit") || lower.contains("show")
-                    || lower.contains("fair") || lower.contains("expo")) {
+                    || lower.contains("gallery") || lower.contains("museum"))
                 return R.drawable.bg_event_exhibition;
-            }
 
-            // Coldplay-specific (already has its own drawable)
-            if (lower.contains("coldplay")) {
+            if (lower.contains("coldplay"))
                 return R.drawable.bg_event_coldplay;
-            }
 
-            // Generic music / concert / live / tour / gig
             if (lower.contains("concert") || lower.contains("live")
                     || lower.contains("tour") || lower.contains("gig")
                     || lower.contains("music") || lower.contains("band")
                     || lower.contains("singer") || lower.contains("arijit")
-                    || lower.contains("ed sheeran") || lower.contains("dj")
-                    || lower.contains("unplugged") || lower.contains("acoustic")) {
+                    || lower.contains("ed sheeran") || lower.contains("dj"))
                 return R.drawable.bg_event_concert;
-            }
         }
 
-        // 3. Final fallback — always looks good
         return R.drawable.default_event_image;
-    }
-
-    // --- Business Logic ---
-
-    public int getSavings() { return originalPrice - sellingPrice; }
-
-    public boolean isDiscounted() { return sellingPrice < originalPrice; }
-
-    // --- Parcelable ---
-
-    @Override
-    public int describeContents() { return 0; }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(eventName);
-        dest.writeString(date);
-        dest.writeInt(originalPrice);
-        dest.writeInt(sellingPrice);
-        dest.writeString(sellerName);
-        dest.writeFloat(rating);
-        dest.writeInt(eventImageResId);
-        dest.writeString(eventImageUri);
-        dest.writeString(ticketFileUri);
     }
 }

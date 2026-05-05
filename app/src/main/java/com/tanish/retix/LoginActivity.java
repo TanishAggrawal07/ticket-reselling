@@ -3,8 +3,6 @@ package com.tanish.retix;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Patterns;
@@ -15,6 +13,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -30,15 +32,21 @@ public class LoginActivity extends AppCompatActivity {
     private TextView errorPassword;
     private ProgressBar loginProgress;
 
+    private FirebaseAuth mAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        mAuth = FirebaseAuth.getInstance();
+
         initViews();
         setupTextWatchers();
         setupClickListeners();
     }
+
+    // ── View binding ──────────────────────────────────────────────────────────
 
     private void initViews() {
         inputEmail        = findViewById(R.id.input_email);
@@ -50,6 +58,8 @@ public class LoginActivity extends AppCompatActivity {
         errorPassword     = findViewById(R.id.error_password);
         loginProgress     = findViewById(R.id.login_progress);
     }
+
+    // ── Text watchers ─────────────────────────────────────────────────────────
 
     private void setupTextWatchers() {
         inputEmail.addTextChangedListener(new TextWatcher() {
@@ -69,12 +79,17 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    // ── Click listeners ───────────────────────────────────────────────────────
+
     private void setupClickListeners() {
         btnLogin.setOnClickListener(v -> attemptLogin());
         btnSignup.setOnClickListener(v -> navigateToSignup());
         btnForgotPassword.setOnClickListener(v ->
-                Toast.makeText(this, "Password reset feature coming soon", Toast.LENGTH_SHORT).show());
+                Toast.makeText(this, "Password reset feature coming soon",
+                        Toast.LENGTH_SHORT).show());
     }
+
+    // ── Validation ────────────────────────────────────────────────────────────
 
     private void attemptLogin() {
         String email    = inputEmail.getText().toString().trim();
@@ -108,23 +123,75 @@ public class LoginActivity extends AppCompatActivity {
         if (isValid) performLogin(email, password);
     }
 
+    // ── Firebase login ────────────────────────────────────────────────────────
+
     private void performLogin(String email, String password) {
-        btnLogin.setText("");
-        loginProgress.setVisibility(View.VISIBLE);
-        btnLogin.setEnabled(false);
+        setLoading(true);
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            btnLogin.setText(getString(R.string.login_button));
-            loginProgress.setVisibility(View.GONE);
-            btnLogin.setEnabled(true);
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    setLoading(false);
 
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            prefs.edit().putBoolean(KEY_IS_LOGGED_IN, true).apply();
+                    // Persist login state locally so SplashActivity can skip login
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(KEY_IS_LOGGED_IN, true)
+                            .apply();
 
-            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-            navigateToHome();
-        }, 1500);
+                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+                    navigateToHome();
+                })
+                .addOnFailureListener(e -> {
+                    setLoading(false);
+                    showLoginError(e);
+                });
     }
+
+    // ── Error handling ────────────────────────────────────────────────────────
+
+    private void showLoginError(Exception e) {
+        String message = e.getMessage() != null ? e.getMessage() : "";
+
+        if (e instanceof FirebaseAuthInvalidUserException) {
+            errorEmail.setText("No account found with this email");
+            errorEmail.setVisibility(View.VISIBLE);
+        } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
+            errorPassword.setText("Incorrect password. Please try again");
+            errorPassword.setVisibility(View.VISIBLE);
+        } else if (message.contains("CONFIGURATION_NOT_FOUND")
+                || message.contains("configuration-not-found")) {
+            // Email/Password sign-in provider is not enabled in Firebase Console.
+            // Go to: Firebase Console → Authentication → Sign-in method → Email/Password → Enable
+            Toast.makeText(this,
+                    "Firebase Auth is not configured. Please enable Email/Password sign-in in the Firebase Console.",
+                    Toast.LENGTH_LONG).show();
+        } else if (message.contains("NETWORK_ERROR")
+                || message.contains("network_error")) {
+            Toast.makeText(this,
+                    "Network error. Please check your internet connection.",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this,
+                    "Login failed: " + message,
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────────
+
+    private void setLoading(boolean loading) {
+        if (loading) {
+            btnLogin.setText("");
+            btnLogin.setEnabled(false);
+            loginProgress.setVisibility(View.VISIBLE);
+        } else {
+            btnLogin.setText(getString(R.string.login_button));
+            btnLogin.setEnabled(true);
+            loginProgress.setVisibility(View.GONE);
+        }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
 
     private void navigateToHome() {
         Intent intent = new Intent(this, MainActivity.class);

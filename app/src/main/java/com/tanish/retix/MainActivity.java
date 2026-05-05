@@ -111,11 +111,18 @@ public class MainActivity extends AppCompatActivity implements
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Switches the bottom navigation to the Home tab and refreshes ticket data.
+     * Called by SellFragment after a ticket is successfully listed.
+     */
+    public void switchToHome() {
+        bottomNavigation.setSelectedItemId(R.id.nav_home);
+        if (homeFragment != null) homeFragment.refreshData();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        // Only refresh home data when returning from a detail/external screen,
-        // not on every resume (e.g., fragment switches don't need a reload).
         if (needsHomeRefresh && homeFragment != null) {
             homeFragment.refreshData();
             needsHomeRefresh = false;
