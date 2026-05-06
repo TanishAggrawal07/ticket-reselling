@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/RetixStatCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/spacing_12"
+        android:paddingVertical="@dimen/spacing_12">
+
+        <ImageView
+            android:id="@+id/iv_stat_icon"
+            android:layout_width="@dimen/icon_md"
+            android:layout_height="@dimen/icon_md"
+            android:layout_marginBottom="@dimen/spacing_6"
+            android:src="@drawable/ic_ticket"
+            android:importantForAccessibility="no"
+            app:tint="@color/white" />
+
+        <TextView
+            android:id="@+id/tv_stat_value"
+            style="@style/RetixStatCardValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_2" />
+
+        <TextView
+            android:id="@+id/tv_stat_label"
+            style="@style/RetixStatCardLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

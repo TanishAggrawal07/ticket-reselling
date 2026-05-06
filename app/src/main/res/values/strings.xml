@@ -84,6 +84,7 @@
     <!-- Bottom Navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_sell">Sell</string>
+    <string name="nav_tickets">My Tickets</string>
     <string name="nav_wallet">Wallet</string>
     <string name="nav_profile">Profile</string>
     <string name="wallet">Wallet</string>
@@ -144,10 +145,10 @@
     <string name="version">Version 1.0.0</string>
 
     <!-- Pricing Badges -->
-    <string name="you_save">🟢 You save ₹%1$d</string>
-    <string name="limited_availability">🔥 Limited availability – secure your spot now</string>
+    <string name="you_save">You save ₹%1$d</string>
+    <string name="limited_availability">Limited availability</string>
     <string name="same_price">Same as original price</string>
-    <string name="recover_amount">🟢 Recover ₹%1$d from your ticket</string>
+    <string name="recover_amount">Recover ₹%1$d from your ticket</string>
 
     <!-- Chat -->
     <string name="chat_with_seller">Chat with Seller</string>
@@ -157,6 +158,12 @@
     <string name="view_ticket">View Ticket</string>
     <string name="upload_event_image">Upload Event Image</string>
     <string name="upload_ticket_file">Upload Ticket (PDF or Screenshot)</string>
+
+    <!-- Image Upload -->
+    <string name="concert_banner">Concert Banner</string>
+    <string name="ticket_image">Ticket Image</string>
+    <string name="tap_to_upload_banner">Tap to upload concert banner</string>
+    <string name="tap_to_upload_ticket">Tap to upload ticket image</string>
 
     <!-- Profile Stats -->
     <string name="activity_overview">Activity Overview</string>

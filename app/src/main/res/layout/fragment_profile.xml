@@ -8,539 +8,395 @@
     android:fillViewport="true"
     android:overScrollMode="never">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
 
         <!-- Dark header band -->
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/header_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/primary_dark"
-            android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="52dp"
-            android:paddingBottom="28dp">
+            android:paddingBottom="28dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
-            <!-- Profile info row -->
+            <!-- Header skeleton (visible during loading) -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/header_skeleton"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:layout_marginBottom="20dp">
+                android:orientation="vertical"
+                android:visibility="visible"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-                <!-- Avatar (tappable) -->
-                <FrameLayout
-                    android:id="@+id/layout_profile_image"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:layout_marginEnd="16dp">
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/bg_circle_accent" />
-
-                    <ImageView
-                        android:id="@+id/iv_profile_image"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:visibility="gone"
-                        android:contentDescription="Profile photo" />
-
-                    <TextView
-                        android:id="@+id/tv_user_initial"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:textColor="@color/white"
-                        android:textSize="26sp"
-                        android:textStyle="bold" />
-
-                    <!-- Camera badge -->
-                    <FrameLayout
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="bottom|end"
-                        android:background="@drawable/bg_camera_badge">
-
-                        <ImageView
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_camera"
-                            app:tint="@color/white" />
-                    </FrameLayout>
-                </FrameLayout>
-
-                <!-- Name + email -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <!-- Circular avatar placeholder -->
+                    <com.tanish.retix.ShimmerView
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="16dp"
+                        app:shimmerCircle="true"
+                        app:shimmerBaseColor="#1A2744"
+                        app:shimmerHighlightColor="#263B5C" />
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/tv_user_name"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/white"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                        <com.tanish.retix.ShimmerView
+                            android:layout_width="150dp"
+                            android:layout_height="20dp"
+                            android:layout_marginBottom="8dp"
+                            app:shimmerCornerRadius="10dp"
+                            app:shimmerBaseColor="#1A2744"
+                            app:shimmerHighlightColor="#263B5C" />
+
+                        <com.tanish.retix.ShimmerView
+                            android:layout_width="100dp"
+                            android:layout_height="14dp"
+                            app:shimmerCornerRadius="7dp"
+                            app:shimmerBaseColor="#1A2744"
+                            app:shimmerHighlightColor="#263B5C" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <com.tanish.retix.ShimmerView
+                    android:layout_width="80dp"
+                    android:layout_height="32dp"
+                    app:shimmerCornerRadius="16dp"
+                    app:shimmerBaseColor="#1A2744"
+                    app:shimmerHighlightColor="#263B5C" />
+            </LinearLayout>
+
+            <!-- Real header content (hidden during loading) -->
+            <LinearLayout
+                android:id="@+id/header_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <!-- Profile info row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="20dp">
+
+                    <!-- Avatar (tappable) -->
+                    <FrameLayout
+                        android:id="@+id/layout_profile_image"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="16dp">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_circle_accent" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_marginStart="6dp"
-                            android:src="@drawable/ic_verified"
-                            android:contentDescription="@string/verified" />
+                            android:id="@+id/iv_profile_image"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone"
+                            android:contentDescription="Profile photo" />
+
+                        <TextView
+                            android:id="@+id/tv_user_initial"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:textColor="@color/white"
+                            android:textSize="26sp"
+                            android:textStyle="bold" />
+
+                        <!-- Camera badge -->
+                        <FrameLayout
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="bottom|end"
+                            android:background="@drawable/bg_camera_badge">
+
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_camera"
+                                app:tint="@color/white" />
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <!-- Name + verified + email -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="4dp">
+
+                            <TextView
+                                android:id="@+id/tv_user_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/white"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:id="@+id/iv_verified"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:layout_marginStart="6dp"
+                                android:src="@drawable/ic_verified"
+                                android:contentDescription="@string/verified"
+                                app:tint="@color/white" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_user_email"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_on_dark"
+                            android:textSize="13sp" />
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tv_user_email"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_on_dark"
-                        android:textSize="13sp" />
+                    <!-- Settings icon -->
+                    <ImageButton
+                        android:id="@+id/btn_settings"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_icon_button"
+                        android:contentDescription="@string/settings"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_settings"
+                        app:tint="@color/white" />
+                </LinearLayout>
+
+                <!-- Action buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_edit_profile"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:text="Edit Profile"
+                        android:textAllCaps="false"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        app:cornerRadius="12dp"
+                        app:strokeColor="#3A5A8C" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_logout"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:text="Logout"
+                        android:textAllCaps="false"
+                        android:textColor="#FF6B6B"
+                        android:textSize="13sp"
+                        app:cornerRadius="12dp"
+                        app:strokeColor="#5C3A3A" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Rating pill -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_rating_pill_dark"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="14dp"
-                android:paddingVertical="8dp">
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_star"
-                    android:layout_marginEnd="6dp"
-                    app:tint="#F59E0B" />
+        <!-- Loading spinner -->
+        <ProgressBar
+            android:id="@+id/progress_profile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:indeterminate="true"
+            app:layout_constraintTop_toBottomOf="@id/header_container"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-                <TextView
-                    android:id="@+id/tv_user_rating"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="/ 5.0"
-                    android:textColor="@color/text_on_dark"
-                    android:textSize="13sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Content area -->
-        <LinearLayout
+        <!-- Skeleton Loading Container -->
+        <include
+            android:id="@+id/skeleton_container"
+            layout="@layout/profile_shimmer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Content Container -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/content_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/header_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
             <!-- Activity Overview -->
             <TextView
+                android:id="@+id/label_activity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Activity Overview"
                 android:textColor="@color/text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="12dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
+            <!-- Stat Cards Row -->
             <LinearLayout
+                android:id="@+id/stats_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="20dp">
+                android:layout_marginBottom="20dp"
+                app:layout_constraintTop_toBottomOf="@id/label_activity"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
 
-                <!-- Tickets Sold -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="@color/primary_dark"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeWidth="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🎫"
-                            android:textSize="22sp"
-                            android:layout_marginBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/tv_tickets_sold"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="12"
-                            android:textColor="@color/white"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sold"
-                            android:textColor="@color/text_on_dark"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Total Earnings -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="@color/accent_blue"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeWidth="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="💰"
-                            android:textSize="22sp"
-                            android:layout_marginBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/tv_total_earnings"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="₹36k"
-                            android:textColor="@color/white"
-                            android:textSize="20sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Earned"
-                            android:textColor="#D0E8FF"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Active Listings -->
-                <com.google.android.material.card.MaterialCardView
+                <!-- Tickets Sold Card -->
+                <include
+                    android:id="@+id/card_tickets_sold"
+                    layout="@layout/item_stat_card"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    app:cardBackgroundColor="@color/success_green"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp"
-                    app:strokeWidth="0dp">
+                    android:layout_marginEnd="6dp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
+                <!-- Total Earnings Card -->
+                <include
+                    android:id="@+id/card_earnings"
+                    layout="@layout/item_stat_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📋"
-                            android:textSize="22sp"
-                            android:layout_marginBottom="8dp" />
+                <!-- Active Listings Card -->
+                <include
+                    android:id="@+id/card_active_listings"
+                    layout="@layout/item_stat_card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
 
-                        <TextView
-                            android:id="@+id/tv_active_listings"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="3"
-                            android:textColor="@color/white"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="2dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Active"
-                            android:textColor="#D0FFE8"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- Sales Trend Chart -->
+            <!-- Sales Trend Chart - HIDDEN -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_chart"
+                style="@style/RetixCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="0dp">
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/stats_container">
 
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:padding="16dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/label_sales_trend"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="4dp">
+                        android:text="Sales Trend"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Sales Trend"
-                            android:textColor="@color/text_primary"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Last 6 months"
-                            android:textColor="@color/text_hint"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tv_sales_period"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Last 6 months"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
 
                     <com.tanish.retix.SalesBarChartView
-                        android:layout_width="match_parent"
+                        android:id="@+id/sales_chart"
+                        android:layout_width="0dp"
                         android:layout_height="180dp"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:layout_marginTop="8dp"
+                        app:layout_constraintTop_toBottomOf="@id/label_sales_trend"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Account section label -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ACCOUNT"
-                android:textColor="@color/text_hint"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.08"
-                android:layout_marginBottom="8dp"
-                android:layout_marginStart="4dp" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Menu card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- My Listings -->
-                    <LinearLayout
-                        android:id="@+id/card_my_listings"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
-
-                        <FrameLayout
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:layout_marginEnd="14dp">
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@drawable/bg_circle_accent" />
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_sell"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/my_listings"
-                            android:textColor="@color/text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_arrow_back"
-                            android:rotation="180"
-                            android:contentDescription="@string/my_listings"
-                            app:tint="@color/text_hint" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginStart="68dp"
-                        android:background="@color/border_light" />
-
-                    <!-- My Purchases -->
-                    <LinearLayout
-                        android:id="@+id/card_my_purchases"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
-
-                        <FrameLayout
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:layout_marginEnd="14dp">
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@drawable/bg_circle_accent" />
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_wallet"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/my_purchases"
-                            android:textColor="@color/text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_arrow_back"
-                            android:rotation="180"
-                            android:contentDescription="@string/my_purchases"
-                            app:tint="@color/text_hint" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginStart="68dp"
-                        android:background="@color/border_light" />
-
-                    <!-- Settings -->
-                    <LinearLayout
-                        android:id="@+id/card_settings"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
-
-                        <FrameLayout
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:layout_marginEnd="14dp">
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@drawable/bg_settings_icon_grey" />
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_settings"
-                                app:tint="@color/text_primary" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/settings"
-                            android:textColor="@color/text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_arrow_back"
-                            android:rotation="180"
-                            android:contentDescription="@string/settings"
-                            app:tint="@color/text_hint" />
-                    </LinearLayout>
-                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- No listings empty state -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_listings_empty"
+                style="@style/RetixCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/background_grey"
-                app:cardCornerRadius="18dp"
                 app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                app:layout_constraintTop_toBottomOf="@id/stats_container">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="28dp">
+                    android:padding="@dimen/spacing_28">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🎫"
-                        android:textSize="36sp"
-                        android:layout_marginBottom="12dp" />
+                    <ImageView
+                        android:layout_width="@dimen/icon_xl"
+                        android:layout_height="@dimen/icon_xl"
+                        android:layout_marginBottom="@dimen/spacing_12"
+                        android:src="@drawable/ic_ticket"
+                        android:importantForAccessibility="no"
+                        app:tint="@color/text_hint" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -548,9 +404,9 @@
                         android:gravity="center"
                         android:text="No listings yet"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp"
+                        android:textSize="@dimen/text_15"
                         android:textStyle="bold"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="@dimen/spacing_4" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -558,13 +414,20 @@
                         android:gravity="center"
                         android:text="Tap Sell to list your first ticket"
                         android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_13" />
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <View
                 android:layout_width="match_parent"
-                android:layout_height="40dp" />
-        </LinearLayout>
-    </LinearLayout>
+                android:layout_height="40dp"
+                app:layout_constraintTop_toBottomOf="@id/card_listings_empty"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 </androidx.core.widget.NestedScrollView>

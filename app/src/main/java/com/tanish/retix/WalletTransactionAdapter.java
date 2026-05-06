@@ -72,11 +72,11 @@ public class WalletTransactionAdapter extends RecyclerView.Adapter<WalletTransac
             tvDate.setText(transaction.getDate());
 
             if (transaction.isAvailable()) {
-                tvStatus.setText("✓ Available");
+                tvStatus.setText("Available");
                 tvStatus.setBackgroundResource(R.drawable.bg_status_available);
                 tvStatus.setTextColor(itemView.getContext().getColor(R.color.success_green));
             } else {
-                tvStatus.setText("⏳ Processing");
+                tvStatus.setText("Processing");
                 tvStatus.setBackgroundResource(R.drawable.bg_status_processing);
                 tvStatus.setTextColor(itemView.getContext().getColor(R.color.warning_amber));
             }

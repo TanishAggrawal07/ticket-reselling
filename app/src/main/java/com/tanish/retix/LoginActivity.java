@@ -6,193 +6,195 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Patterns;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
-import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.tanish.retix.databinding.ActivityLoginBinding;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/**
+ * LoginActivity - Handles user authentication using the ReTix API.
+ * Replaces Firebase Auth with JWT-based authentication.
+ * Uses ViewBinding for type-safe view access.
+ */
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String PREFS_NAME       = "ReTixPrefs";
+    private static final String PREFS_NAME = "ReTixPrefs";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
 
-    private EditText inputEmail;
-    private EditText inputPassword;
-    private TextView btnLogin;
-    private TextView btnSignup;
-    private TextView btnForgotPassword;
-    private TextView errorEmail;
-    private TextView errorPassword;
-    private ProgressBar loginProgress;
-
-    private FirebaseAuth mAuth;
+    private ActivityLoginBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
 
-        mAuth = FirebaseAuth.getInstance();
+        // Initialize ViewBinding
+        binding = ActivityLoginBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        initViews();
+        // Initialize API client
+        if (ApiClient.getTokenManager() == null) {
+            ApiClient.init(getApplicationContext());
+        }
+
         setupTextWatchers();
         setupClickListeners();
     }
 
-    // ── View binding ──────────────────────────────────────────────────────────
-
-    private void initViews() {
-        inputEmail        = findViewById(R.id.input_email);
-        inputPassword     = findViewById(R.id.input_password);
-        btnLogin          = findViewById(R.id.btn_login);
-        btnSignup         = findViewById(R.id.btn_signup);
-        btnForgotPassword = findViewById(R.id.btn_forgot_password);
-        errorEmail        = findViewById(R.id.error_email);
-        errorPassword     = findViewById(R.id.error_password);
-        loginProgress     = findViewById(R.id.login_progress);
-    }
-
-    // ── Text watchers ─────────────────────────────────────────────────────────
-
+    // Text watchers - clear errors on input
     private void setupTextWatchers() {
-        inputEmail.addTextChangedListener(new TextWatcher() {
+        binding.inputEmail.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                errorEmail.setVisibility(View.GONE);
+                binding.errorEmail.setVisibility(android.view.View.GONE);
             }
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        inputPassword.addTextChangedListener(new TextWatcher() {
+        binding.inputPassword.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                errorPassword.setVisibility(View.GONE);
+                binding.errorPassword.setVisibility(android.view.View.GONE);
             }
             @Override public void afterTextChanged(Editable s) {}
         });
     }
 
-    // ── Click listeners ───────────────────────────────────────────────────────
-
+    // Click listeners
     private void setupClickListeners() {
-        btnLogin.setOnClickListener(v -> attemptLogin());
-        btnSignup.setOnClickListener(v -> navigateToSignup());
-        btnForgotPassword.setOnClickListener(v ->
+        binding.btnLogin.setOnClickListener(v -> attemptLogin());
+        binding.btnSignup.setOnClickListener(v -> navigateToSignup());
+        binding.btnForgotPassword.setOnClickListener(v ->
                 Toast.makeText(this, "Password reset feature coming soon",
                         Toast.LENGTH_SHORT).show());
     }
 
-    // ── Validation ────────────────────────────────────────────────────────────
-
+    // Validation
     private void attemptLogin() {
-        String email    = inputEmail.getText().toString().trim();
-        String password = inputPassword.getText().toString().trim();
+        String email = binding.inputEmail.getText().toString().trim();
+        String password = binding.inputPassword.getText().toString().trim();
 
-        errorEmail.setVisibility(View.GONE);
-        errorPassword.setVisibility(View.GONE);
+        binding.errorEmail.setVisibility(android.view.View.GONE);
+        binding.errorPassword.setVisibility(android.view.View.GONE);
 
         boolean isValid = true;
 
         if (email.isEmpty()) {
-            errorEmail.setText(getString(R.string.login_error_email_empty));
-            errorEmail.setVisibility(View.VISIBLE);
+            binding.errorEmail.setText(getString(R.string.login_error_email_empty));
+            binding.errorEmail.setVisibility(android.view.View.VISIBLE);
             isValid = false;
         } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            errorEmail.setText(getString(R.string.login_error_email_invalid));
-            errorEmail.setVisibility(View.VISIBLE);
+            binding.errorEmail.setText(getString(R.string.login_error_email_invalid));
+            binding.errorEmail.setVisibility(android.view.View.VISIBLE);
             isValid = false;
         }
 
         if (password.isEmpty()) {
-            errorPassword.setText(getString(R.string.login_error_password_empty));
-            errorPassword.setVisibility(View.VISIBLE);
+            binding.errorPassword.setText(getString(R.string.login_error_password_empty));
+            binding.errorPassword.setVisibility(android.view.View.VISIBLE);
             isValid = false;
         } else if (password.length() < 6) {
-            errorPassword.setText(getString(R.string.login_error_password_short));
-            errorPassword.setVisibility(View.VISIBLE);
+            binding.errorPassword.setText(getString(R.string.login_error_password_short));
+            binding.errorPassword.setVisibility(android.view.View.VISIBLE);
             isValid = false;
         }
 
         if (isValid) performLogin(email, password);
     }
 
-    // ── Firebase login ────────────────────────────────────────────────────────
-
+    // API login
     private void performLogin(String email, String password) {
         setLoading(true);
 
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnSuccessListener(authResult -> {
-                    setLoading(false);
+        ApiService.LoginRequest request = new ApiService.LoginRequest(email, password);
 
-                    // Persist login state locally so SplashActivity can skip login
+        ApiClient.getService().login(request).enqueue(new Callback<ApiService.AuthResponse>() {
+            @Override
+            public void onResponse(Call<ApiService.AuthResponse> call, Response<ApiService.AuthResponse> response) {
+                setLoading(false);
+
+                if (response.isSuccessful() && response.body() != null && response.body().success) {
+                    ApiService.AuthData data = response.body().data;
+
+                    // Save token and user info
+                    ApiClient.getTokenManager().saveToken(
+                            data.token,
+                            data.user.id,
+                            data.user.email,
+                            data.user.name
+                    );
+
+                    // Persist login state
                     getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                             .edit()
                             .putBoolean(KEY_IS_LOGGED_IN, true)
                             .apply();
 
-                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+                    // Cache name/email for ProfileFragment
+                    getSharedPreferences(EditProfileActivity.PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putString(EditProfileActivity.KEY_PROFILE_NAME, data.user.name)
+                            .putString(EditProfileActivity.KEY_PROFILE_EMAIL, data.user.email)
+                            .apply();
+
+                    Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
                     navigateToHome();
-                })
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    showLoginError(e);
-                });
+                } else {
+                    // Handle API error
+                    if (response.body() != null && response.body().error != null) {
+                        showLoginError(response.body().error.code, response.body().error.message);
+                    } else {
+                        showLoginError("SERVER_ERROR", "Login failed. Please try again.");
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiService.AuthResponse> call, Throwable t) {
+                setLoading(false);
+                showLoginError("NETWORK_ERROR", "Network error. Please check your connection.");
+            }
+        });
     }
 
-    // ── Error handling ────────────────────────────────────────────────────────
-
-    private void showLoginError(Exception e) {
-        String message = e.getMessage() != null ? e.getMessage() : "";
-
-        if (e instanceof FirebaseAuthInvalidUserException) {
-            errorEmail.setText("No account found with this email");
-            errorEmail.setVisibility(View.VISIBLE);
-        } else if (e instanceof FirebaseAuthInvalidCredentialsException) {
-            errorPassword.setText("Incorrect password. Please try again");
-            errorPassword.setVisibility(View.VISIBLE);
-        } else if (message.contains("CONFIGURATION_NOT_FOUND")
-                || message.contains("configuration-not-found")) {
-            // Email/Password sign-in provider is not enabled in Firebase Console.
-            // Go to: Firebase Console → Authentication → Sign-in method → Email/Password → Enable
-            Toast.makeText(this,
-                    "Firebase Auth is not configured. Please enable Email/Password sign-in in the Firebase Console.",
-                    Toast.LENGTH_LONG).show();
-        } else if (message.contains("NETWORK_ERROR")
-                || message.contains("network_error")) {
-            Toast.makeText(this,
-                    "Network error. Please check your internet connection.",
-                    Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this,
-                    "Login failed: " + message,
-                    Toast.LENGTH_LONG).show();
+    // Error handling
+    private void showLoginError(String code, String message) {
+        switch (code) {
+            case "INVALID_CREDENTIALS":
+                binding.errorEmail.setText("Invalid email or password");
+                binding.errorEmail.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "USER_NOT_FOUND":
+                binding.errorEmail.setText("No account found with this email");
+                binding.errorEmail.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "NETWORK_ERROR":
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                break;
+            default:
+                Toast.makeText(this, "Login failed: " + message, Toast.LENGTH_LONG).show();
+                break;
         }
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────────
-
+    // UI helpers
     private void setLoading(boolean loading) {
         if (loading) {
-            btnLogin.setText("");
-            btnLogin.setEnabled(false);
-            loginProgress.setVisibility(View.VISIBLE);
+            binding.btnLogin.setText("");
+            binding.btnLogin.setEnabled(false);
+            binding.loginProgress.setVisibility(android.view.View.VISIBLE);
         } else {
-            btnLogin.setText(getString(R.string.login_button));
-            btnLogin.setEnabled(true);
-            loginProgress.setVisibility(View.GONE);
+            binding.btnLogin.setText(getString(R.string.login_button));
+            binding.btnLogin.setEnabled(true);
+            binding.loginProgress.setVisibility(android.view.View.GONE);
         }
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-
+    // Navigation
     private void navigateToHome() {
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -202,5 +204,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToSignup() {
         startActivity(new Intent(this, SignupActivity.class));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null;
     }
 }

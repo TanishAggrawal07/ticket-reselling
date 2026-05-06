@@ -28,53 +28,63 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.auth.FirebaseUser;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/**
+ * SellFragment - Fragment for creating ticket listings.
+ * Uses API for ticket creation and image upload.
+ */
 public class SellFragment extends Fragment {
 
     private static final String TAG = "SELL";
+    private static final long UPLOAD_TIMEOUT_MS = 120_000;
 
-    // Safety timeout: if neither success nor failure fires within this many ms,
-    // dismiss the loading dialog and re-enable the button automatically.
-    private static final long UPLOAD_TIMEOUT_MS = 120_000; // 2 minutes
-
-    // ── Form fields ───────────────────────────────────────────────────────────
-    private EditText       etEventName, etDate, etOriginalPrice, etSellingPrice;
-    private TextView       tvRecoveryMessage;
+    // Form fields
+    private EditText etEventName, etDate, etOriginalPrice, etSellingPrice;
+    private TextView tvRecoveryMessage;
     private MaterialButton btnSubmit;
-    private View           rootView;
+    private View rootView;
 
-    // ── Event image upload ────────────────────────────────────────────────────
-    private LinearLayout   layoutEventImagePicker;
-    private FrameLayout    frameEventImage;
-    private ImageView      ivEventImagePreview;
+    // Event image upload
+    private LinearLayout layoutEventImagePicker;
+    private FrameLayout frameEventImage;
+    private ImageView ivEventImagePreview;
     private MaterialButton btnChangeEventImage, btnRemoveEventImage;
 
-    // ── Ticket file upload ────────────────────────────────────────────────────
-    private LinearLayout   layoutTicketFilePicker;
-    private LinearLayout   frameTicketFile;
-    private TextView       tvTicketFileName;
-    private TextView       tvTicketUploadError;
+    // Ticket file upload
+    private LinearLayout layoutTicketFilePicker;
+    private LinearLayout frameTicketFile;
+    private TextView tvTicketFileName;
+    private TextView tvTicketUploadError;
     private MaterialButton btnChangeTicketFile, btnRemoveTicketFile;
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // State
     private Uri selectedEventImageUri = null;
     private Uri selectedTicketFileUri = null;
 
-    private Calendar         selectedDate;
+    private Calendar selectedDate;
     private SimpleDateFormat dateFormat;
-    private LoadingDialog    loadingDialog;
-    private FirebaseManager  firebaseManager;
+    private LoadingDialog loadingDialog;
+    private ApiManager apiManager;
 
-    // Safety timeout handler — cancels infinite loading
-    private final Handler  timeoutHandler  = new Handler(Looper.getMainLooper());
-    private       Runnable timeoutRunnable = null;
+    private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable timeoutRunnable = null;
 
-    // ── Activity result launchers ─────────────────────────────────────────────
+    // Activity result launchers
     private ActivityResultLauncher<Intent> eventImageLauncher;
     private ActivityResultLauncher<Intent> ticketFileLauncher;
 
@@ -84,19 +94,16 @@ public class SellFragment extends Fragment {
         return new SellFragment();
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        firebaseManager = FirebaseManager.getInstance();
+        apiManager = ApiManager.getInstance();
 
         eventImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK
-                            && result.getData() != null) {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getData();
                         if (uri != null) onEventImageSelected(uri);
                     }
@@ -105,8 +112,7 @@ public class SellFragment extends Fragment {
         ticketFileLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK
-                            && result.getData() != null) {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getData();
                         if (uri != null) onTicketFileSelected(uri);
                     }
@@ -122,7 +128,7 @@ public class SellFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        rootView      = view;
+        rootView = view;
         loadingDialog = new LoadingDialog(requireContext());
         initViews(view);
         setupDatePicker();
@@ -138,35 +144,33 @@ public class SellFragment extends Fragment {
         if (loadingDialog != null && loadingDialog.isShowing()) loadingDialog.dismiss();
     }
 
-    // ── View binding ──────────────────────────────────────────────────────────
-
+    // View binding
     private void initViews(View view) {
-        etEventName       = view.findViewById(R.id.et_event_name);
-        etDate            = view.findViewById(R.id.et_date);
-        etOriginalPrice   = view.findViewById(R.id.et_original_price);
-        etSellingPrice    = view.findViewById(R.id.et_selling_price);
+        etEventName = view.findViewById(R.id.et_event_name);
+        etDate = view.findViewById(R.id.et_date);
+        etOriginalPrice = view.findViewById(R.id.et_original_price);
+        etSellingPrice = view.findViewById(R.id.et_selling_price);
         tvRecoveryMessage = view.findViewById(R.id.tv_recovery_message);
-        btnSubmit         = view.findViewById(R.id.btn_submit);
+        btnSubmit = view.findViewById(R.id.btn_submit);
 
         layoutEventImagePicker = view.findViewById(R.id.layout_event_image_picker);
-        frameEventImage        = view.findViewById(R.id.frame_event_image);
-        ivEventImagePreview    = view.findViewById(R.id.iv_event_image_preview);
-        btnChangeEventImage    = view.findViewById(R.id.btn_change_event_image);
-        btnRemoveEventImage    = view.findViewById(R.id.btn_remove_event_image);
+        frameEventImage = view.findViewById(R.id.frame_event_image);
+        ivEventImagePreview = view.findViewById(R.id.iv_event_image_preview);
+        btnChangeEventImage = view.findViewById(R.id.btn_change_event_image);
+        btnRemoveEventImage = view.findViewById(R.id.btn_remove_event_image);
 
         layoutTicketFilePicker = view.findViewById(R.id.layout_ticket_file_picker);
-        frameTicketFile        = view.findViewById(R.id.frame_ticket_file);
-        tvTicketFileName       = view.findViewById(R.id.tv_ticket_file_name);
-        tvTicketUploadError    = view.findViewById(R.id.tv_ticket_upload_error);
-        btnChangeTicketFile    = view.findViewById(R.id.btn_change_ticket_file);
-        btnRemoveTicketFile    = view.findViewById(R.id.btn_remove_ticket_file);
+        frameTicketFile = view.findViewById(R.id.frame_ticket_file);
+        tvTicketFileName = view.findViewById(R.id.tv_ticket_file_name);
+        tvTicketUploadError = view.findViewById(R.id.tv_ticket_upload_error);
+        btnChangeTicketFile = view.findViewById(R.id.btn_change_ticket_file);
+        btnRemoveTicketFile = view.findViewById(R.id.btn_remove_ticket_file);
 
         selectedDate = Calendar.getInstance();
-        dateFormat   = new SimpleDateFormat("EEE, MMM d • h:mm a", Locale.getDefault());
+        dateFormat = new SimpleDateFormat("EEE, MMM d • h:mm a", Locale.getDefault());
     }
 
-    // ── Date picker ───────────────────────────────────────────────────────────
-
+    // Date picker
     private void setupDatePicker() {
         etDate.setOnClickListener(v -> {
             DatePickerDialog dialog = new DatePickerDialog(
@@ -183,8 +187,7 @@ public class SellFragment extends Fragment {
         });
     }
 
-    // ── Pricing listener ──────────────────────────────────────────────────────
-
+    // Pricing listener
     private void setupPricingListener() {
         TextWatcher watcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -208,7 +211,7 @@ public class SellFragment extends Fragment {
                 tvRecoveryMessage.setText("Please enter a valid price");
                 tvRecoveryMessage.setTextColor(requireContext().getColor(R.color.error_red));
             } else {
-                tvRecoveryMessage.setText("🟢 Recover ₹" + price + " from your ticket");
+                tvRecoveryMessage.setText("Recover ₹" + price + " from your ticket");
                 tvRecoveryMessage.setTextColor(requireContext().getColor(R.color.success_green));
             }
         } catch (NumberFormatException e) {
@@ -217,8 +220,7 @@ public class SellFragment extends Fragment {
         }
     }
 
-    // ── Upload buttons ────────────────────────────────────────────────────────
-
+    // Upload buttons
     private void setupUploadButtons() {
         layoutEventImagePicker.setOnClickListener(v -> pickEventImage());
         btnChangeEventImage.setOnClickListener(v -> pickEventImage());
@@ -235,8 +237,7 @@ public class SellFragment extends Fragment {
             selectedTicketFileUri = null;
             frameTicketFile.setVisibility(View.GONE);
             layoutTicketFilePicker.setVisibility(View.VISIBLE);
-            layoutTicketFilePicker.setBackground(
-                    requireContext().getDrawable(R.drawable.bg_upload_area));
+            layoutTicketFilePicker.setBackground(requireContext().getDrawable(R.drawable.bg_upload_area));
             tvTicketUploadError.setVisibility(View.GONE);
         });
     }
@@ -269,156 +270,152 @@ public class SellFragment extends Fragment {
         tvTicketUploadError.setVisibility(View.GONE);
     }
 
-    // ── Submit ────────────────────────────────────────────────────────────────
-
+    // Submit
     private void setupSubmitButton() {
         btnSubmit.setOnClickListener(v -> {
             if (validateForm()) submitTicket();
         });
     }
 
-    /**
-     * Submit flow — strictly ordered:
-     *   1. Validate form
-     *   2. Start safety timeout (prevents infinite loading)
-     *   3. If image selected → upload to Cloudinary → wait for secure_url
-     *   4. ONLY after URL received → write ticket to Firebase
-     *   5. On success OR failure → ALWAYS stop loading + re-enable button
-     */
     private void submitTicket() {
-        FirebaseUser user = firebaseManager.getCurrentUser();
-        if (user == null) {
-            Toast.makeText(requireContext(),
-                    "You must be logged in to list a ticket",
+        String sellerId = ApiClient.getTokenManager().getUserId();
+        if (sellerId == null) {
+            Toast.makeText(requireContext(), "You must be logged in to list a ticket",
                     Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Snapshot all form values NOW before any async work begins.
-        // This prevents clearForm() from wiping them before callbacks fire.
-        final String sellerId   = user.getUid();
-        final String title      = etEventName.getText().toString().trim();
-        final String eventDate  = etDate.getText().toString().trim();
-        final int    price      = parsePrice(etSellingPrice);
-        final String savedName  = requireActivity()
-                .getSharedPreferences(EditProfileActivity.PREFS_NAME,
-                        android.content.Context.MODE_PRIVATE)
+        final String title = etEventName.getText().toString().trim();
+        final String eventDate = etDate.getText().toString().trim();
+        final int originalPrice = parsePrice(etOriginalPrice);
+        final int price = parsePrice(etSellingPrice);
+        final String savedName = requireActivity()
+                .getSharedPreferences(EditProfileActivity.PREFS_NAME, android.content.Context.MODE_PRIVATE)
                 .getString(EditProfileActivity.KEY_PROFILE_NAME, null);
         final String sellerName = (savedName != null && !savedName.isEmpty())
                 ? savedName
-                : (user.getDisplayName() != null ? user.getDisplayName() : "Seller");
+                : ApiClient.getTokenManager().getUserName();
 
-        // Lock UI
         setSubmitLoading(true);
         loadingDialog.setMessage("Preparing...");
         loadingDialog.show();
 
-        // Start safety timeout — if nothing responds in UPLOAD_TIMEOUT_MS, stop loading
         startTimeout("Upload timed out. Please check your connection and try again.");
 
+        // Upload event image first (if selected), then ticket file, then save
         if (selectedEventImageUri != null) {
-            // ── STEP 1: Upload image to Cloudinary ────────────────────────────
             loadingDialog.setMessage("Uploading image...");
             Log.d(TAG, "submitTicket: uploading image uri=" + selectedEventImageUri);
 
-            CloudinaryClient.uploadImage(
-                    requireContext(),
-                    selectedEventImageUri,
-                    new CloudinaryClient.UploadCallback() {
+            uploadImageToServer(selectedEventImageUri, new ApiManager.UploadCallback() {
+                @Override
+                public void onSuccess(String secureUrl) {
+                    if (!isAdded()) return;
+                    Log.d(TAG, "uploadImage: success — secure_url=" + secureUrl);
+                    uploadTicketFileAndSave(sellerId, sellerName, title, eventDate, originalPrice, price, secureUrl);
+                }
 
-                        @Override
-                        public void onSuccess(String secureUrl) {
-                            // Callback is guaranteed on main thread by CloudinaryClient
-                            if (!isAdded()) {
-                                Log.w(TAG, "onSuccess: fragment detached, aborting");
-                                return;
-                            }
-                            cancelTimeout(); // upload succeeded — cancel the safety timer
-                            Log.d(TAG, "uploadImage: success — secure_url=" + secureUrl);
-
-                            // ── STEP 2: Save to Firebase with the URL ─────────
-                            saveTicketToFirebase(sellerId, sellerName, title,
-                                    eventDate, price, secureUrl);
-                        }
-
-                        @Override
-                        public void onFailure(String errorMessage) {
-                            if (!isAdded()) return;
-                            cancelTimeout();
-                            Log.e(TAG, "uploadImage: failed — " + errorMessage);
-                            // ALWAYS stop loading on failure
-                            stopLoading();
-                            showError("Image upload failed: " + errorMessage);
-                        }
-                    });
+                @Override
+                public void onFailure(String errorMessage) {
+                    if (!isAdded()) return;
+                    cancelTimeout();
+                    Log.e(TAG, "uploadImage: failed — " + errorMessage);
+                    stopLoading();
+                    showError("Image upload failed: " + errorMessage);
+                }
+            });
         } else {
-            // No image — go straight to Firebase
-            cancelTimeout(); // no upload step, cancel immediately
-            Log.d(TAG, "submitTicket: no image selected, skipping Cloudinary");
-            saveTicketToFirebase(sellerId, sellerName, title, eventDate, price, "");
+            cancelTimeout();
+            Log.d(TAG, "submitTicket: no image selected, skipping upload");
+            uploadTicketFileAndSave(sellerId, sellerName, title, eventDate, originalPrice, price, "");
         }
     }
 
-    // ── Firebase write ────────────────────────────────────────────────────────
+    private void uploadTicketFileAndSave(String sellerId, String sellerName, String title,
+                                          String eventDate, int originalPrice, int price, String imageUrl) {
+        if (selectedTicketFileUri != null) {
+            loadingDialog.setMessage("Uploading ticket file...");
+            Log.d(TAG, "uploadTicketFile: uploading uri=" + selectedTicketFileUri);
 
-    /**
-     * Writes the ticket to Firebase Realtime Database.
-     * Called ONLY after the Cloudinary URL has been received (or skipped).
-     * ALWAYS stops loading in both success and failure paths.
-     */
-    private void saveTicketToFirebase(String sellerId, String sellerName,
-                                      String title, String eventDate,
-                                      int price, String imageUrl) {
+            uploadImageToServer(selectedTicketFileUri, new ApiManager.UploadCallback() {
+                @Override
+                public void onSuccess(String ticketFileUrl) {
+                    if (!isAdded()) return;
+                    Log.d(TAG, "uploadTicketFile: success — url=" + ticketFileUrl);
+                    cancelTimeout();
+                    saveTicketToApi(sellerId, sellerName, title, eventDate, originalPrice, price, imageUrl, ticketFileUrl);
+                }
+
+                @Override
+                public void onFailure(String errorMessage) {
+                    if (!isAdded()) return;
+                    cancelTimeout();
+                    Log.e(TAG, "uploadTicketFile: failed — " + errorMessage);
+                    stopLoading();
+                    showError("Ticket file upload failed: " + errorMessage);
+                }
+            });
+        } else {
+            saveTicketToApi(sellerId, sellerName, title, eventDate, originalPrice, price, imageUrl, "");
+        }
+    }
+
+    private void uploadImageToServer(Uri imageUri, ApiManager.UploadCallback callback) {
+        try {
+            // Create temporary file from Uri
+            File tempFile = createTempFileFromUri(imageUri);
+
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), tempFile);
+            MultipartBody.Part body = MultipartBody.Part.createFormData("image", tempFile.getName(), requestFile);
+
+            apiManager.uploadImage(body, callback);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to prepare image upload", e);
+            callback.onFailure("Failed to prepare image: " + e.getMessage());
+        }
+    }
+
+    private File createTempFileFromUri(Uri uri) throws Exception {
+        File tempFile = File.createTempFile("upload_", ".jpg", requireContext().getCacheDir());
+
+        try (InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+             FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+
+            if (inputStream == null) {
+                throw new IOException("Could not open input stream");
+            }
+
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+        }
+
+        return tempFile;
+    }
+
+    private void saveTicketToApi(String sellerId, String sellerName, String title,
+                                   String eventDate, int originalPrice, int price, String imageUrl, String ticketFileUrl) {
         if (!isAdded()) return;
 
         loadingDialog.setMessage("Saving ticket...");
-
-        // Start a fresh timeout for the Firebase write
         startTimeout("Ticket save timed out. Please try again.");
 
-        Log.d(TAG, "saveTicketToFirebase: title=" + title
-                + " price=" + price
-                + " imageUrl=" + (imageUrl.isEmpty() ? "(none)" : imageUrl)
-                + " sellerId=" + sellerId);
+        Log.d(TAG, "saveTicketToApi: title=" + title + " price=" + price + " sellerId=" + sellerId);
 
-        firebaseManager.saveTicket(
-                title,
-                title,       // description = title
-                price,
-                eventDate,
-                imageUrl,
-                sellerId,
-                sellerName,
-                new FirebaseManager.VoidCallback() {
-
+        apiManager.saveTicket(title, title, originalPrice, price, eventDate, imageUrl, ticketFileUrl, sellerId, sellerName,
+                new ApiManager.VoidCallback() {
                     @Override
                     public void onSuccess() {
                         if (!isAdded()) return;
                         cancelTimeout();
-                        Log.d(TAG, "saveTicketToFirebase: success");
+                        Log.d(TAG, "saveTicketToApi: success");
 
-                        // ALWAYS stop loading first
                         stopLoading();
-
-                        Toast.makeText(requireContext(),
-                                "Ticket listed successfully!", Toast.LENGTH_SHORT).show();
-
-                        // Credit wallet — fire-and-forget, doesn't block the UI
-                        if (price > 0) {
-                            firebaseManager.addMoney(
-                                    sellerId,
-                                    price,
-                                    "Ticket listed: " + title,
-                                    new FirebaseManager.VoidCallback() {
-                                        @Override public void onSuccess() {
-                                            Log.d("WALLET", "Credited ₹" + price
-                                                    + " for: " + title);
-                                        }
-                                        @Override public void onFailure(String err) {
-                                            Log.e("WALLET", "Credit failed: " + err);
-                                        }
-                                    });
-                        }
+                        Toast.makeText(requireContext(), "Ticket listed successfully!",
+                                Toast.LENGTH_SHORT).show();
 
                         clearForm();
                         navigateToHome();
@@ -428,22 +425,15 @@ public class SellFragment extends Fragment {
                     public void onFailure(String errorMessage) {
                         if (!isAdded()) return;
                         cancelTimeout();
-                        Log.e(TAG, "saveTicketToFirebase: failed — " + errorMessage);
+                        Log.e(TAG, "saveTicketToApi: failed — " + errorMessage);
 
-                        // ALWAYS stop loading on failure
                         stopLoading();
                         showError("Failed to save ticket: " + errorMessage);
                     }
                 });
     }
 
-    // ── Timeout helpers ───────────────────────────────────────────────────────
-
-    /**
-     * Starts a safety timeout. If neither success nor failure fires within
-     * UPLOAD_TIMEOUT_MS, the loading is stopped and an error is shown.
-     * Calling startTimeout() again replaces any existing timeout.
-     */
+    // Timeout helpers
     private void startTimeout(String timeoutMessage) {
         cancelTimeout();
         timeoutRunnable = () -> {
@@ -455,7 +445,6 @@ public class SellFragment extends Fragment {
         timeoutHandler.postDelayed(timeoutRunnable, UPLOAD_TIMEOUT_MS);
     }
 
-    /** Cancels the pending timeout (call when a callback fires normally). */
     private void cancelTimeout() {
         if (timeoutRunnable != null) {
             timeoutHandler.removeCallbacks(timeoutRunnable);
@@ -463,16 +452,14 @@ public class SellFragment extends Fragment {
         }
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-
+    // Navigation
     private void navigateToHome() {
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).switchToHome();
         }
     }
 
-    // ── Validation ────────────────────────────────────────────────────────────
-
+    // Validation
     private boolean validateForm() {
         boolean valid = true;
         tvTicketUploadError.setVisibility(View.GONE);
@@ -517,19 +504,13 @@ public class SellFragment extends Fragment {
         }
         if (selectedTicketFileUri == null) {
             tvTicketUploadError.setVisibility(View.VISIBLE);
-            layoutTicketFilePicker.setBackground(
-                    requireContext().getDrawable(R.drawable.bg_upload_area_error));
+            layoutTicketFilePicker.setBackground(requireContext().getDrawable(R.drawable.bg_upload_area_error));
             valid = false;
         }
         return valid;
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────────
-
-    /**
-     * Stops all loading indicators and re-enables the submit button.
-     * Called in EVERY success and failure path — no exceptions.
-     */
+    // UI helpers
     private void stopLoading() {
         if (loadingDialog != null && loadingDialog.isShowing()) {
             loadingDialog.dismiss();
@@ -560,8 +541,7 @@ public class SellFragment extends Fragment {
         selectedTicketFileUri = null;
         frameTicketFile.setVisibility(View.GONE);
         layoutTicketFilePicker.setVisibility(View.VISIBLE);
-        layoutTicketFilePicker.setBackground(
-                requireContext().getDrawable(R.drawable.bg_upload_area));
+        layoutTicketFilePicker.setBackground(requireContext().getDrawable(R.drawable.bg_upload_area));
         tvTicketUploadError.setVisibility(View.GONE);
     }
 

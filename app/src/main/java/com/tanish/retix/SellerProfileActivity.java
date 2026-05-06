@@ -16,9 +16,6 @@ import java.util.List;
 
 public class SellerProfileActivity extends AppCompatActivity implements TicketAdapter.OnTicketClickListener {
 
-    private static final String PREFS_NAME    = "ReTixPrefs";
-    private static final String KEY_DARK_MODE = "dark_mode_enabled";
-
     private ImageButton btnBack;
     private TextView tvSellerName, tvSellerInitial, tvSellerRating, tvListingsTitle;
     private RecyclerView rvSellerTickets;
@@ -91,10 +88,10 @@ public class SellerProfileActivity extends AppCompatActivity implements TicketAd
     private void loadSellerTickets() {
         sellerTickets = new ArrayList<>();
 
-        // If we have a real sellerId, fetch from Firebase
+        // If we have a real sellerId, fetch from API
         if (sellerId != null && !sellerId.isEmpty()) {
-            FirebaseManager.getInstance().fetchMyListings(sellerId,
-                    new FirebaseManager.TicketsCallback() {
+            ApiManager.getInstance().fetchMyListings(sellerId,
+                    new ApiManager.TicketsCallback() {
                         @Override
                         public void onSuccess(List<Ticket> tickets) {
                             sellerTickets = tickets;
@@ -120,10 +117,10 @@ public class SellerProfileActivity extends AppCompatActivity implements TicketAd
             rvSellerTickets.setVisibility(android.view.View.GONE);
             layoutEmptyListings.setVisibility(android.view.View.VISIBLE);
             // Configure empty state text
-            android.widget.TextView iconView = layoutEmptyListings.findViewById(R.id.tv_empty_icon);
+            android.widget.ImageView iconView = layoutEmptyListings.findViewById(R.id.iv_empty_icon);
             android.widget.TextView titleView = layoutEmptyListings.findViewById(R.id.tv_empty_title);
             android.widget.TextView subtitleView = layoutEmptyListings.findViewById(R.id.tv_empty_subtitle);
-            if (iconView != null) iconView.setText("🎫");
+            if (iconView != null) iconView.setImageResource(R.drawable.ic_ticket);
             if (titleView != null) titleView.setText("No listings yet");
             if (subtitleView != null) subtitleView.setText("This seller has no active listings");
         } else {

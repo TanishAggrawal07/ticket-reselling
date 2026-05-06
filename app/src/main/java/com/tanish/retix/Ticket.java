@@ -16,6 +16,7 @@ public class Ticket implements Parcelable {
     private String sellerId;        // Firebase Auth UID of the seller
     private float  rating;
     private String status;          // "available" | "sold"
+    private String buyerId;        // ID of the buyer (null if not sold)
 
     // ── Image / file fields ───────────────────────────────────────────────────
     private int    eventImageResId;  // local drawable fallback (dummy data)
@@ -70,6 +71,16 @@ public class Ticket implements Parcelable {
         this.eventImageResId = 0;
     }
 
+    /** Full constructor with buyerId */
+    public Ticket(String firestoreId, String eventName, String date, String eventDate,
+                  int originalPrice, int sellingPrice,
+                  String sellerName, String sellerId, float rating,
+                  String status, String buyerId, String eventImageUrl, String ticketFileUrl) {
+        this(firestoreId, eventName, date, eventDate, originalPrice, sellingPrice,
+                sellerName, sellerId, rating, status, eventImageUrl, ticketFileUrl);
+        this.buyerId = buyerId;
+    }
+
     // ── Parcelable ────────────────────────────────────────────────────────────
 
     protected Ticket(Parcel in) {
@@ -83,6 +94,7 @@ public class Ticket implements Parcelable {
         sellerId         = in.readString();
         rating           = in.readFloat();
         status           = in.readString();
+        buyerId          = in.readString();
         eventImageResId  = in.readInt();
         eventImageUri    = in.readString();
         eventImageUrl    = in.readString();
@@ -102,6 +114,7 @@ public class Ticket implements Parcelable {
         dest.writeString(sellerId);
         dest.writeFloat(rating);
         dest.writeString(status);
+        dest.writeString(buyerId);
         dest.writeInt(eventImageResId);
         dest.writeString(eventImageUri);
         dest.writeString(eventImageUrl);
@@ -149,6 +162,9 @@ public class Ticket implements Parcelable {
     public String getStatus()                               { return status; }
     public void   setStatus(String status)                  { this.status = status; }
 
+    public String getBuyerId()                              { return buyerId; }
+    public void   setBuyerId(String buyerId)                { this.buyerId = buyerId; }
+
     public int    getEventImageResId()                      { return eventImageResId; }
     public void   setEventImageResId(int eventImageResId)   { this.eventImageResId = eventImageResId; }
 
@@ -185,6 +201,11 @@ public class Ticket implements Parcelable {
 
     public boolean isAvailable() {
         return STATUS_AVAILABLE.equals(status);
+    }
+
+    /** Whether the current user purchased this ticket */
+    public boolean isPurchasedBy(String userId) {
+        return buyerId != null && buyerId.equals(userId);
     }
 
     // ── Business logic ────────────────────────────────────────────────────────

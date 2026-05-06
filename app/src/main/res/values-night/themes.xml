@@ -35,11 +35,4 @@
     </style>
 
     <style name="Theme.Retix" parent="Base.Theme.Retix" />
-
-    <style name="Theme.Retix.Splash" parent="Base.Theme.Retix">
-        <item name="android:windowBackground">@color/primary_dark</item>
-        <item name="android:statusBarColor">@color/primary_dark</item>
-        <item name="android:navigationBarColor">@color/primary_dark</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
-    </style>
 </resources>

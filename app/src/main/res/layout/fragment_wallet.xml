@@ -75,18 +75,13 @@
                         android:textStyle="bold"
                         android:layout_marginBottom="12dp" />
 
-                    <!-- Divider -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/accent_blue_dim"
-                        android:layout_marginBottom="12dp" />
-
                     <LinearLayout
+                        android:id="@+id/layout_pending_balance"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
                         <View
                             android:layout_width="8dp"
@@ -95,9 +90,9 @@
                             android:layout_marginEnd="8dp" />
 
                         <TextView
+                            android:id="@+id/tv_pending_balance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₹2,500 processing"
                             android:textColor="@color/text_on_dark"
                             android:textSize="13sp" />
                     </LinearLayout>

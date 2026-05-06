@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.\\\\gradlew.bat :app:compileDebugJavaWithJavac)",
+      "PowerShell(.\\\\gradlew.bat :app:compileDebugJavaWithJavac)",
+      "PowerShell(Rename-Item *)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Bash(npx vercel *)",
+      "Bash(curl -s https://backend-three-phi-61.vercel.app/)",
+      "Bash(curl *)",
+      "Bash(npm install *)",
+      "Bash(node *)",
+      "Bash(npx vercel@latest *)",
+      "Bash(python -m json.tool)",
+      "Bash(./gradlew :app:assembleDebug --parallel --daemon)",
+      "Bash(./gradlew :app:compileDebugJavaWithJavac --no-daemon -q)",
+      "PowerShell($img = [System.Drawing.Image]::FromFile\\('C:\\\\Users\\\\Lenovo\\\\Downloads\\\\retix.png'\\); \"Width: $\\($img.Width\\) Height: $\\($img.Height\\)\"; $img.Dispose\\(\\))",
+      "Read(//c/Users/Lenovo/Downloads/**)",
+      "Bash(python3 -c \"from PIL import Image; i=Image.open\\(r'C:\\\\Users\\\\Lenovo\\\\Downloads\\\\retix.png'\\); print\\(i.size\\)\")",
+      "Bash(./gradlew compileDebugJavaWithJavac)"
+    ]
+  }
+}

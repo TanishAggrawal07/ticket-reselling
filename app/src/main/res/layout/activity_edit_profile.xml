@@ -217,6 +217,14 @@
                 app:backgroundTint="@null"
                 app:cornerRadius="16dp" />
 
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
             <View android:layout_width="match_parent" android:layout_height="32dp" />
 
         </LinearLayout>

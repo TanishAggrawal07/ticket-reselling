@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============================================================================ -->
+    <!-- RETIX COMPONENT STYLES -->
+    <!-- Reusable styles for common UI components to reduce inline styling -->
+    <!-- ============================================================================ -->
+
+    <!-- Card Styles -->
+    <style name="RetixCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/corner_radius_large</item>
+        <item name="cardElevation">@dimen/elevation_card</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="RetixCard.Outlined">
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/border_light</item>
+    </style>
+
+    <style name="RetixCard.Dark">
+        <item name="cardBackgroundColor">@color/primary_dark</item>
+    </style>
+
+    <style name="RetixCard.Accent">
+        <item name="cardBackgroundColor">@color/accent_blue</item>
+    </style>
+
+    <style name="RetixCard.Success">
+        <item name="cardBackgroundColor">@color/success_green</item>
+    </style>
+
+    <!-- Form Styles -->
+    <style name="RetixFormGroup">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_20</item>
+    </style>
+
+    <style name="RetixFormLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_13</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_8</item>
+    </style>
+
+    <style name="RetixInput">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/input_height</item>
+        <item name="android:background">@drawable/bg_input_field_selector</item>
+        <item name="android:paddingHorizontal">@dimen/spacing_18</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:textSize">@dimen/text_15</item>
+    </style>
+
+    <!-- Note: RetixErrorText, RetixHeading, RetixBody, RetixButton defined in themes.xml -->
+
+    <style name="RetixButton.Text">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/text_14</item>
+        <item name="android:paddingStart">@dimen/spacing_6</item>
+    </style>
+
+    <style name="RetixHeading.Small">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_20</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="RetixCaption">
+        <item name="android:textColor">@color/text_hint</item>
+        <item name="android:textSize">@dimen/text_13</item>
+    </style>
+
+    <!-- Price Styles -->
+    <style name="RetixPrice">
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="RetixPrice.Large">
+        <item name="android:textSize">@dimen/text_34</item>
+    </style>
+
+    <style name="RetixPrice.Medium">
+        <item name="android:textSize">@dimen/text_24</item>
+    </style>
+
+    <style name="RetixPrice.Small">
+        <item name="android:textSize">@dimen/text_16</item>
+    </style>
+
+    <!-- Stat Card Styles -->
+    <style name="RetixStatCard" parent="RetixCard.Dark">
+        <item name="cardCornerRadius">@dimen/corner_radius_medium</item>
+        <item name="cardElevation">@dimen/elevation_small</item>
+    </style>
+
+    <style name="RetixStatCardValue">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/text_22</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="RetixStatCardLabel">
+        <item name="android:textColor">#D0E8FF</item>
+        <item name="android:textSize">@dimen/text_11</item>
+    </style>
+
+    <!-- Menu Item Styles -->
+    <style name="RetixMenuItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">64dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingHorizontal">@dimen/spacing_16</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="RetixMenuItemIconContainer">
+        <item name="android:layout_width">38dp</item>
+        <item name="android:layout_height">38dp</item>
+        <item name="android:layout_marginEnd">@dimen/spacing_14</item>
+    </style>
+
+    <style name="RetixMenuItemText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_15</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Ticket Card Styles -->
+    <style name="RetixTicketImageContainer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">160dp</item>
+    </style>
+
+    <style name="RetixTicketPriceChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_price_chip</item>
+        <item name="android:paddingHorizontal">@dimen/spacing_12</item>
+        <item name="android:paddingVertical">@dimen/spacing_6</item>
+    </style>
+
+    <style name="RetixTicketEventName">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_17</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="RetixTicketMetaRow">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <!-- Divider Styles -->
+    <style name="RetixDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/border_light</item>
+    </style>
+
+    <style name="RetixDivider.WithMargin">
+        <item name="android:layout_marginStart">68dp</item>
+    </style>
+
+    <!-- Note: RetixSectionLabel defined in themes.xml -->
+
+    <!-- Rating Badge Styles -->
+    <style name="RetixRatingBadge">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_rating_pill_dark</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingHorizontal">@dimen/spacing_14</item>
+        <item name="android:paddingVertical">@dimen/spacing_8</item>
+    </style>
+
+    <!-- Empty State Styles -->
+    <style name="RetixEmptyStateContainer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">@dimen/spacing_28</item>
+    </style>
+
+    <style name="RetixEmptyStateIcon">
+        <item name="android:layout_width">@dimen/icon_xl</item>
+        <item name="android:layout_height">@dimen/icon_xl</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_20</item>
+    </style>
+
+    <style name="RetixEmptyStateTitle">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_15</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="RetixEmptyStateSubtitle">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_13</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginTop">@dimen/spacing_4</item>
+    </style>
+
+</resources>

@@ -1,5 +1,6 @@
 package com.tanish.retix;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -7,7 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,23 +22,31 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/**
+ * HomeFragment - Displays available tickets using the API.
+ */
 public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClickListener {
 
-    private RecyclerView          rvTickets;
-    private TicketAdapter         ticketAdapter;
-    private EditText              etSearch;
-    private View                  layoutEmptyState;
-    private TextView              tvEmptyTitle, tvEmptySubtitle, tvEmptyIcon;
-    private FloatingActionButton  fabSellTicket;
-    private ImageButton           btnSettings;
+    private RecyclerView rvTickets;
+    private TicketAdapter ticketAdapter;
+    private EditText etSearch;
+    private View layoutEmptyState;
+    private TextView tvEmptyTitle, tvEmptySubtitle;
+    private ImageView ivEmptyIcon;
+    private FloatingActionButton fabSellTicket;
+    private View skeletonContainer;
 
-    private List<Ticket>          tickets;
+    private List<Ticket> tickets;
     private OnFragmentInteractionListener listener;
-    private FirebaseManager       firebaseManager;
+    private ApiManager apiManager;
+    private boolean isLoading = false;
 
     public interface OnFragmentInteractionListener {
         void onSellTicketClick();
-        void onSettingsFromHomeClick();
         void onTicketClick(Ticket ticket);
     }
 
@@ -47,12 +56,10 @@ public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClic
         return new HomeFragment();
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        firebaseManager = FirebaseManager.getInstance();
+        apiManager = ApiManager.getInstance();
         if (getActivity() instanceof OnFragmentInteractionListener) {
             listener = (OnFragmentInteractionListener) getActivity();
         }
@@ -71,25 +78,22 @@ public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClic
         setupRecyclerView();
         setupSearch();
         setupFab();
-        setupSettingsButton();
         loadTickets();
     }
 
-    // ── View binding ──────────────────────────────────────────────────────────
-
+    // View binding
     private void initViews(View view) {
-        rvTickets        = view.findViewById(R.id.rv_tickets);
-        etSearch         = view.findViewById(R.id.et_search);
+        rvTickets = view.findViewById(R.id.rv_tickets);
+        etSearch = view.findViewById(R.id.et_search);
         layoutEmptyState = view.findViewById(R.id.layout_empty_state);
-        tvEmptyTitle     = layoutEmptyState.findViewById(R.id.tv_empty_title);
-        tvEmptySubtitle  = layoutEmptyState.findViewById(R.id.tv_empty_subtitle);
-        tvEmptyIcon      = layoutEmptyState.findViewById(R.id.tv_empty_icon);
-        fabSellTicket    = view.findViewById(R.id.fab_sell_ticket);
-        btnSettings      = view.findViewById(R.id.btn_settings);
+        tvEmptyTitle = layoutEmptyState.findViewById(R.id.tv_empty_title);
+        tvEmptySubtitle = layoutEmptyState.findViewById(R.id.tv_empty_subtitle);
+        ivEmptyIcon = layoutEmptyState.findViewById(R.id.iv_empty_icon);
+        fabSellTicket = view.findViewById(R.id.fab_sell_ticket);
+        skeletonContainer = view.findViewById(R.id.skeleton_container);
     }
 
-    // ── RecyclerView ──────────────────────────────────────────────────────────
-
+    // RecyclerView
     private void setupRecyclerView() {
         tickets = new ArrayList<>();
         rvTickets.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -97,8 +101,7 @@ public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClic
         rvTickets.setAdapter(ticketAdapter);
     }
 
-    // ── Search ────────────────────────────────────────────────────────────────
-
+    // Search
     private void setupSearch() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -110,85 +113,59 @@ public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClic
         });
     }
 
-    // ── FAB / Settings ────────────────────────────────────────────────────────
-
+    // FAB
     private void setupFab() {
         fabSellTicket.setOnClickListener(v -> {
-            if (listener != null) listener.onSellTicketClick();
+            startActivity(new Intent(requireContext(), SellTicketActivity.class));
         });
     }
 
-    private void setupSettingsButton() {
-        btnSettings.setOnClickListener(v -> {
-            if (listener != null) listener.onSettingsFromHomeClick();
-        });
-    }
-
-    // ── Realtime Database fetch ───────────────────────────────────────────────
-
-    /**
-     * Fetches all available tickets from Realtime Database (latest first).
-     * Falls back to dummy data if the database is empty or unreachable.
-     */
+    // API fetch
     private void loadTickets() {
+        // Prevent duplicate loading
+        if (isLoading) return;
+
+        isLoading = true;
         setLoading(true);
 
-        firebaseManager.fetchAvailableTickets(new FirebaseManager.TicketsCallback() {
+        apiManager.fetchAvailableTickets(new ApiManager.TicketsCallback() {
             @Override
             public void onSuccess(List<Ticket> result) {
+                isLoading = false;
                 if (!isAdded()) return;
                 setLoading(false);
-                if (result.isEmpty()) {
-                    loadDummyFallback();
-                } else {
-                    tickets = result;
-                    ticketAdapter.updateTickets(tickets);
-                    updateEmptyState();
-                }
+                tickets = result;
+                ticketAdapter.updateTickets(tickets);
+                updateEmptyState();
             }
 
             @Override
             public void onFailure(String errorMessage) {
+                isLoading = false;
                 if (!isAdded()) return;
                 setLoading(false);
-                // Fall back to dummy data on network/permission error
-                loadDummyFallback();
+                tickets = new ArrayList<>();
+                ticketAdapter.updateTickets(tickets);
+                updateEmptyState();
             }
         });
     }
 
-    /** Dummy data shown when the database is empty or unreachable. */
-    private void loadDummyFallback() {
-        tickets = new ArrayList<>();
-        tickets.add(new Ticket("Coldplay: Music of the Spheres",
-                "Sat, Jan 18 • 7:00 PM", 7500, 5500, "Arjun Sharma", 4.8f));
-        tickets.add(new Ticket("Ed Sheeran: +-=÷x Tour",
-                "Sun, Feb 2 • 6:30 PM", 5000, 7200, "Priya Patel", 4.9f));
-        tickets.add(new Ticket("Arijit Singh Live Concert",
-                "Fri, Jan 24 • 8:00 PM", 3500, 2800, "Rahul Verma", 4.6f));
-        tickets.add(new Ticket("IPL 2025: RCB vs CSK",
-                "Sat, Mar 15 • 3:30 PM", 2500, 2500, "Karan Malhotra", 4.7f));
-        tickets.add(new Ticket("Sunburn Goa 2025",
-                "Dec 27-29 • 4:00 PM", 4500, 3200, "Neha Gupta", 4.5f));
-        tickets.add(new Ticket("Zakir Khan: Haq Se Single",
-                "Sat, Feb 8 • 7:30 PM", 1500, 1200, "Sneha Joshi", 4.7f));
-        tickets.add(new Ticket("Hamlet – Shakespeare Drama",
-                "Sun, Feb 16 • 6:00 PM", 1200, 900, "Vikram Nair", 4.4f));
-        tickets.add(new Ticket("Google DevFest 2025",
-                "Sat, Mar 1 • 10:00 AM", 500, 400, "Ananya Singh", 4.6f));
-        tickets.add(new Ticket("Mumbai Street Food Festival",
-                "Sat, Mar 22 • 12:00 PM", 300, 250, "Rohan Mehta", 4.3f));
-        ticketAdapter.updateTickets(tickets);
-        updateEmptyState();
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Stop shimmer animations when fragment is not visible
+        if (skeletonContainer != null) {
+            skeletonContainer.setVisibility(View.GONE);
+        }
     }
 
-    // ── Empty state ───────────────────────────────────────────────────────────
-
+    // Empty state
     private void updateEmptyState() {
         if (ticketAdapter.getItemCount() == 0) {
             layoutEmptyState.setVisibility(View.VISIBLE);
             rvTickets.setVisibility(View.GONE);
-            tvEmptyIcon.setText("🎫");
+            ivEmptyIcon.setImageResource(R.drawable.ic_ticket);
             tvEmptyTitle.setText("No tickets available");
             tvEmptySubtitle.setText("Check back later or list your own ticket to get started");
         } else {
@@ -199,19 +176,21 @@ public class HomeFragment extends Fragment implements TicketAdapter.OnTicketClic
 
     private void setLoading(boolean loading) {
         if (loading) {
+            skeletonContainer.setVisibility(View.VISIBLE);
             rvTickets.setVisibility(View.GONE);
             layoutEmptyState.setVisibility(View.GONE);
+        } else {
+            skeletonContainer.setVisibility(View.GONE);
         }
     }
 
-    // ── Ticket click ──────────────────────────────────────────────────────────
-
+    // Ticket click
     @Override
     public void onTicketClick(Ticket ticket) {
         if (listener != null) listener.onTicketClick(ticket);
     }
 
-    /** Called by MainActivity when returning from a detail screen. */
+    // Called by MainActivity when returning from detail screen
     public void refreshData() {
         loadTickets();
     }

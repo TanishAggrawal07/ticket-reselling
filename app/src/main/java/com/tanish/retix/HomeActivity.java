@@ -47,7 +47,7 @@ public class HomeActivity extends AppCompatActivity implements TicketAdapter.OnT
         setupRecyclerView();
         setupSearch();
         setupFab();
-        loadDummyData();
+        loadTicketsFromApi();
 
         // Handle back button press
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -74,7 +74,8 @@ public class HomeActivity extends AppCompatActivity implements TicketAdapter.OnT
 
         // Profile button click
         findViewById(R.id.btn_profile).setOnClickListener(v -> {
-            Toast.makeText(this, "Profile coming soon", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
         });
     }
 
@@ -108,61 +109,23 @@ public class HomeActivity extends AppCompatActivity implements TicketAdapter.OnT
         });
     }
 
-    private void loadDummyData() {
-        tickets = new ArrayList<>();
+    private void loadTicketsFromApi() {
+        ApiManager apiManager = ApiManager.getInstance();
+        apiManager.fetchAvailableTickets(new ApiManager.TicketsCallback() {
+            @Override
+            public void onSuccess(List<Ticket> result) {
+                tickets = result;
+                ticketAdapter.updateTickets(tickets);
+                updateEmptyState();
+            }
 
-        // Discounted ticket - buyer saves money
-        tickets.add(new Ticket(
-                "Coldplay: Music of the Spheres",
-                "Sat, Jan 18 • 7:00 PM",
-                7500,
-                5500,
-                "Arjun Sharma",
-                4.8f
-        ));
-
-        // Premium ticket - higher than original
-        tickets.add(new Ticket(
-                "Ed Sheeran: +-=÷x Tour",
-                "Sun, Feb 2 • 6:30 PM",
-                5000,
-                7200,
-                "Priya Patel",
-                4.9f
-        ));
-
-        // Discounted ticket
-        tickets.add(new Ticket(
-                "Arijit Singh Live Concert",
-                "Fri, Jan 24 • 8:00 PM",
-                3500,
-                2800,
-                "Rahul Verma",
-                4.6f
-        ));
-
-        // Same price ticket
-        tickets.add(new Ticket(
-                "IPL 2025: RCB vs CSK",
-                "Sat, Mar 15 • 3:30 PM",
-                2500,
-                2500,
-                "Karan Malhotra",
-                4.7f
-        ));
-
-        // Another discounted ticket
-        tickets.add(new Ticket(
-                "Sunburn Goa 2025",
-                "Dec 27-29 • 4:00 PM",
-                4500,
-                3200,
-                "Neha Gupta",
-                4.5f
-        ));
-
-        ticketAdapter.updateTickets(tickets);
-        updateEmptyState();
+            @Override
+            public void onFailure(String errorMessage) {
+                tickets = new ArrayList<>();
+                ticketAdapter.updateTickets(tickets);
+                updateEmptyState();
+            }
+        });
     }
 
     private void updateEmptyState() {

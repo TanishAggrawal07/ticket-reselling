@@ -6,12 +6,14 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,9 +21,21 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+
 public class EditProfileActivity extends AppCompatActivity {
+
+    private static final String TAG = "EditProfile";
 
     // SharedPreferences keys — shared with ProfileFragment
     static final String PREFS_NAME        = "ReTixPrefs";
@@ -36,14 +50,18 @@ public class EditProfileActivity extends AppCompatActivity {
     private EditText etName, etEmail;
     private TextView tvErrorName, tvErrorEmail;
     private MaterialButton btnSave;
+    private ProgressBar progressBar;
 
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<Intent> imageLauncher;
+    private ApiManager apiManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
+
+        apiManager = ApiManager.getInstance();
 
         overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out);
 
@@ -88,6 +106,14 @@ public class EditProfileActivity extends AppCompatActivity {
         tvErrorName    = findViewById(R.id.tv_error_name);
         tvErrorEmail   = findViewById(R.id.tv_error_email);
         btnSave        = findViewById(R.id.btn_save);
+
+        // Find or create progress bar
+        progressBar = findViewById(R.id.progress_bar);
+        if (progressBar == null) {
+            // Progress bar might be in layout, if not we'll handle visibility differently
+            progressBar = new ProgressBar(this);
+            progressBar.setVisibility(View.GONE);
+        }
     }
 
     // ── Load saved data ───────────────────────────────────────────────────────
@@ -95,8 +121,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private void loadSavedProfile() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
-        String name  = prefs.getString(KEY_PROFILE_NAME,  "John Doe");
-        String email = prefs.getString(KEY_PROFILE_EMAIL, "john.doe@example.com");
+        String name  = prefs.getString(KEY_PROFILE_NAME,  "");
+        String email = prefs.getString(KEY_PROFILE_EMAIL, "");
         String imageUriStr = prefs.getString(KEY_PROFILE_IMAGE, null);
 
         etName.setText(name);
@@ -104,16 +130,57 @@ public class EditProfileActivity extends AppCompatActivity {
 
         // Show saved profile image or initial letter
         if (imageUriStr != null && !imageUriStr.isEmpty()) {
-            try {
-                Uri uri = Uri.parse(imageUriStr);
-                selectedImageUri = uri;
-                showProfileImage(uri);
-            } catch (Exception e) {
-                showInitial(name);
+            if (imageUriStr.startsWith("http")) {
+                // Server URL - use Glide-compatible display
+                // Don't set selectedImageUri since this is already uploaded
+                showProfileImageFromUrl(imageUriStr);
+            } else {
+                // Local URI - might be from old version or not yet uploaded
+                try {
+                    Uri uri = Uri.parse(imageUriStr);
+                    selectedImageUri = uri;
+                    showProfileImage(uri);
+                } catch (Exception e) {
+                    showInitial(name);
+                }
             }
         } else {
             showInitial(name);
         }
+
+        // Also fetch from server to get latest data
+        fetchProfileFromServer();
+    }
+
+    private void fetchProfileFromServer() {
+        String userId = ApiClient.getTokenManager().getUserId();
+        if (userId == null) return;
+
+        apiManager.fetchUserProfile(userId, new ApiManager.UserProfileCallback() {
+            @Override
+            public void onSuccess(String name, String email, String profileImageUrl) {
+                // Update UI with server data if fields are empty
+                if (etName.getText().toString().trim().isEmpty() && !name.isEmpty()) {
+                    etName.setText(name);
+                }
+                if (etEmail.getText().toString().trim().isEmpty() && !email.isEmpty()) {
+                    etEmail.setText(email);
+                }
+                // Update image if server has one and no local image is selected
+                if (selectedImageUri == null && profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                    showProfileImageFromUrl(profileImageUrl);
+                    // Save server URL
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                            .putString(KEY_PROFILE_IMAGE, profileImageUrl)
+                            .apply();
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                Log.w(TAG, "Failed to fetch profile: " + errorMessage);
+            }
+        });
     }
 
     // ── Listeners ─────────────────────────────────────────────────────────────
@@ -169,26 +236,129 @@ public class EditProfileActivity extends AppCompatActivity {
 
         if (!valid) return;
 
-        // Persist to SharedPreferences
-        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        editor.putString(KEY_PROFILE_NAME, name);
-        editor.putString(KEY_PROFILE_EMAIL, email);
+        setLoading(true);
+
+        // If there's a new image, upload it first
         if (selectedImageUri != null) {
-            editor.putString(KEY_PROFILE_IMAGE, selectedImageUri.toString());
+            uploadImageAndSaveProfile(name, email);
+        } else {
+            // No new image, just update profile
+            updateProfile(name, email, null);
         }
-        editor.apply();
+    }
 
-        // Update the initial letter in case name changed
-        showInitialForName(name);
+    private void uploadImageAndSaveProfile(String name, String email) {
+        try {
+            MultipartBody.Part imagePart = createImagePart(selectedImageUri);
+            if (imagePart == null) {
+                setLoading(false);
+                Toast.makeText(this, "Failed to prepare image", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+            apiManager.uploadImage(imagePart, new ApiManager.UploadCallback() {
+                @Override
+                public void onSuccess(String imageUrl) {
+                    // Image uploaded, now update profile with the URL
+                    updateProfile(name, email, imageUrl);
+                }
 
-        // Return to Settings with a success result so ProfileFragment can refresh
-        setResult(Activity.RESULT_OK);
-        finish();
+                @Override
+                public void onFailure(String errorMessage) {
+                    setLoading(false);
+                    Log.e(TAG, "Image upload failed: " + errorMessage);
+                    Toast.makeText(EditProfileActivity.this,
+                            "Image upload failed: " + errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Exception e) {
+            setLoading(false);
+            Log.e(TAG, "Error preparing image: " + e.getMessage());
+            Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private MultipartBody.Part createImagePart(Uri imageUri) throws IOException {
+        // Create a temporary file from the URI
+        File tempFile = createTempFileFromUri(imageUri);
+        if (tempFile == null) return null;
+
+        // Create RequestBody from the file
+        RequestBody requestFile = RequestBody.create(
+                MediaType.parse(getContentResolver().getType(imageUri) != null ?
+                        getContentResolver().getType(imageUri) : "image/jpeg"),
+                tempFile
+        );
+
+        // Create MultipartBody.Part
+        return MultipartBody.Part.createFormData("image", tempFile.getName(), requestFile);
+    }
+
+    private File createTempFileFromUri(Uri uri) throws IOException {
+        File tempFile = new File(getCacheDir(), "upload_image_" + System.currentTimeMillis() + ".jpg");
+
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+
+            if (inputStream == null) return null;
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        }
+
+        return tempFile;
+    }
+
+    private void updateProfile(String name, String email, String imageUrl) {
+        // Update user profile via API
+        apiManager.saveUser(ApiClient.getTokenManager().getUserId(), name, email, imageUrl,
+                new ApiManager.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        // Save to SharedPreferences
+                        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+                        editor.putString(KEY_PROFILE_NAME, name);
+                        editor.putString(KEY_PROFILE_EMAIL, email);
+                        // Save SERVER URL (not local URI) - imageUrl can be null if no new image
+                        if (imageUrl != null && !imageUrl.isEmpty()) {
+                            editor.putString(KEY_PROFILE_IMAGE, imageUrl);
+                        }
+                        editor.apply();
+
+                        // Update TokenManager cache
+                        ApiClient.getTokenManager().updateUserName(name);
+
+                        setLoading(false);
+                        Toast.makeText(EditProfileActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+
+                        // Return to Settings with a success result so ProfileFragment can refresh
+                        setResult(Activity.RESULT_OK);
+                        finish();
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        setLoading(false);
+                        Log.e(TAG, "Profile update failed: " + errorMessage);
+                        Toast.makeText(EditProfileActivity.this,
+                                "Failed to update profile: " + errorMessage, Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────
+
+    private void setLoading(boolean loading) {
+        if (progressBar != null) {
+            progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        }
+        btnSave.setEnabled(!loading);
+        layoutAvatar.setEnabled(!loading);
+        btnBack.setEnabled(!loading);
+    }
 
     private void showProfileImage(Uri uri) {
         try {
@@ -201,6 +371,22 @@ public class EditProfileActivity extends AppCompatActivity {
         }
     }
 
+    private void showProfileImageFromUrl(String url) {
+        try {
+            Glide.with(this)
+                    .load(url)
+                    .circleCrop()
+                    .placeholder(R.drawable.bg_circle_accent)
+                    .error(R.drawable.bg_circle_accent)
+                    .into(ivProfileImage);
+            ivProfileImage.setVisibility(View.VISIBLE);
+            tvUserInitial.setVisibility(View.GONE);
+        } catch (Exception e) {
+            // URL failed — fall back to initial
+            showInitial(etName.getText().toString().trim());
+        }
+    }
+
     private void showInitial(String name) {
         ivProfileImage.setVisibility(View.GONE);
         tvUserInitial.setVisibility(View.VISIBLE);
@@ -208,12 +394,6 @@ public class EditProfileActivity extends AppCompatActivity {
             tvUserInitial.setText(String.valueOf(name.charAt(0)).toUpperCase());
         } else {
             tvUserInitial.setText("?");
-        }
-    }
-
-    private void showInitialForName(String name) {
-        if (ivProfileImage.getVisibility() != View.VISIBLE) {
-            showInitial(name);
         }
     }
 

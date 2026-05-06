@@ -1,9 +1,13 @@
 package com.tanish.retix;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -11,30 +15,40 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.database.ChildEventListener;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+/**
+ * ChatActivity - Chat interface for buyers and sellers.
+ * Uses API polling for messages instead of Firebase real-time.
+ */
 public class ChatActivity extends AppCompatActivity {
 
     private RecyclerView rvMessages;
-    private EditText     etMessage;
-    private ImageButton  btnSend;
-    private ImageButton  btnBack;
-    private TextView     tvSellerName;
+    private EditText etMessage;
+    private ImageButton btnSend;
+    private ImageButton btnBack;
+    private TextView tvSellerName;
+    private ProgressBar progressBar;
+    private View emptyStateView;
 
-    private ChatAdapter       chatAdapter;
+    private ChatAdapter chatAdapter;
     private List<ChatMessage> messages;
 
-    // Firebase
-    private FirebaseManager firebaseManager;
-    private String          currentUserId;
-    private String          receiverId;
-    private String          chatId;
+    private ApiManager apiManager;
+    private String currentUserId;
+    private String receiverId;
+    private String receiverName;
+    private String chatId;
 
-    // ChildEventListener fires once per message — no duplicates
-    private ChildEventListener messageListener;
+    // Polling for new messages
+    private Handler pollHandler = new Handler(Looper.getMainLooper());
+    private Runnable pollRunnable;
+    private static final long POLL_INTERVAL_MS = 3000; // Poll every 3 seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,26 +57,43 @@ public class ChatActivity extends AppCompatActivity {
 
         overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out);
 
-        firebaseManager = FirebaseManager.getInstance();
-        currentUserId   = firebaseManager.getCurrentUserId();
+        apiManager = ApiManager.getInstance();
+        currentUserId = ApiClient.getTokenManager().getUserId();
 
-        String sellerName = getIntent().getStringExtra("seller_name");
-        receiverId        = getIntent().getStringExtra("seller_id");
-
-        if (sellerName == null || sellerName.isEmpty()) sellerName = "Seller";
-
-        // Guard: if no sellerId passed (e.g. dummy data), use a placeholder
-        if (receiverId == null || receiverId.isEmpty()) {
-            receiverId = "unknown_seller";
+        // Support both buyer and seller chat
+        receiverName = getIntent().getStringExtra("receiver_name");
+        if (receiverName == null) {
+            receiverName = getIntent().getStringExtra("seller_name"); // legacy support
+        }
+        receiverId = getIntent().getStringExtra("receiver_id");
+        if (receiverId == null) {
+            receiverId = getIntent().getStringExtra("seller_id"); // legacy support
         }
 
-        chatId = FirebaseManager.buildChatId(
-                currentUserId != null ? currentUserId : "guest", receiverId);
+        if (receiverName == null || receiverName.isEmpty()) receiverName = "Seller";
 
-        initViews(sellerName);
+        // Guard: Check for self-chat
+        if (receiverId != null && receiverId.equals(currentUserId)) {
+            Toast.makeText(this, "You cannot chat with yourself", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Guard: if no sellerId passed
+        if (receiverId == null || receiverId.isEmpty()) {
+            Toast.makeText(this, "Invalid seller", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        chatId = ApiManager.buildChatId(currentUserId != null ? currentUserId : "guest", receiverId);
+
+        initViews(receiverName);
         setupRecyclerView();
         setupListeners();
-        listenForMessages();
+        showLoading(true);
+        loadMessages(); // Load immediately
+        startPolling();
     }
 
     @Override
@@ -74,25 +105,38 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Remove listener to prevent memory leaks
-        if (messageListener != null) {
-            firebaseManager.removeMessageListener(chatId, messageListener);
+        stopPolling();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Resume polling when returning to the chat
+        if (pollRunnable == null) {
+            startPolling();
         }
     }
 
-    // ── View binding ──────────────────────────────────────────────────────────
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Pause polling when leaving the chat
+        stopPolling();
+    }
 
+    // View binding
     private void initViews(String sellerName) {
-        rvMessages   = findViewById(R.id.rv_messages);
-        etMessage    = findViewById(R.id.et_message);
-        btnSend      = findViewById(R.id.btn_send);
-        btnBack      = findViewById(R.id.btn_back);
+        rvMessages = findViewById(R.id.rv_messages);
+        etMessage = findViewById(R.id.et_message);
+        btnSend = findViewById(R.id.btn_send);
+        btnBack = findViewById(R.id.btn_back);
         tvSellerName = findViewById(R.id.tv_seller_name);
+        progressBar = findViewById(R.id.progress_bar);
+        emptyStateView = findViewById(R.id.empty_state);
         tvSellerName.setText(sellerName);
     }
 
-    // ── RecyclerView ──────────────────────────────────────────────────────────
-
+    // RecyclerView
     private void setupRecyclerView() {
         messages = new ArrayList<>();
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -102,49 +146,81 @@ public class ChatActivity extends AppCompatActivity {
         rvMessages.setAdapter(chatAdapter);
     }
 
-    // ── Button listeners ──────────────────────────────────────────────────────
-
+    // Button listeners
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
         btnSend.setOnClickListener(v -> sendMessage());
     }
 
-    // ── Real-time message listener ────────────────────────────────────────────
+    // Polling for new messages
+    private void startPolling() {
+        pollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                loadMessages();
+                pollHandler.postDelayed(this, POLL_INTERVAL_MS);
+            }
+        };
+        pollHandler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
+    }
 
-    /**
-     * Uses ChildEventListener so onChildAdded fires exactly once per message —
-     * once for each existing message on attach, then once per new message.
-     * No duplicates, no full-snapshot rebuilds.
-     */
-    private void listenForMessages() {
+    private void stopPolling() {
+        if (pollRunnable != null) {
+            pollHandler.removeCallbacks(pollRunnable);
+            pollRunnable = null;
+        }
+    }
+
+    // Load messages from API
+    private void loadMessages() {
         if (currentUserId == null) {
-            messages.add(new ChatMessage(
-                    "Please log in to chat with the seller.", false, getCurrentTime()));
-            chatAdapter.notifyDataSetChanged();
+            showLoading(false);
             return;
         }
 
-        messageListener = firebaseManager.listenForMessages(
-                chatId, currentUserId,
-                new FirebaseManager.MessagesCallback() {
-                    @Override
-                    public void onNewMessage(ChatMessage message) {
-                        messages.add(message);
-                        chatAdapter.notifyItemInserted(messages.size() - 1);
-                        rvMessages.scrollToPosition(messages.size() - 1);
-                    }
+        apiManager.fetchMessages(chatId, new ApiManager.MessageListCallback() {
+            @Override
+            public void onSuccess(List<ChatMessage> newMessages) {
+                showLoading(false);
 
-                    @Override
-                    public void onFailure(String errorMessage) {
-                        Toast.makeText(ChatActivity.this,
-                                "Failed to load messages: " + errorMessage,
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
+                // Update messages
+                messages.clear();
+                messages.addAll(newMessages);
+                chatAdapter.notifyDataSetChanged();
+
+                if (messages.isEmpty()) {
+                    showEmptyState(true);
+                } else {
+                    showEmptyState(false);
+                    rvMessages.scrollToPosition(messages.size() - 1);
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                showLoading(false);
+                // Show error only on initial load, not during polling
+                if (messages.isEmpty()) {
+                    Toast.makeText(ChatActivity.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
-    // ── Send message ──────────────────────────────────────────────────────────
+    private void showLoading(boolean show) {
+        if (progressBar != null) {
+            progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
 
+    private void showEmptyState(boolean show) {
+        if (emptyStateView != null) {
+            emptyStateView.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        rvMessages.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    // Send message
     private void sendMessage() {
         String text = etMessage.getText().toString().trim();
         if (TextUtils.isEmpty(text)) return;
@@ -157,24 +233,29 @@ public class ChatActivity extends AppCompatActivity {
 
         etMessage.setText(""); // clear immediately for responsive feel
 
-        firebaseManager.sendMessage(chatId, currentUserId, receiverId, text,
-                new FirebaseManager.VoidCallback() {
+        // Add message to UI immediately (optimistic update)
+        String time = new java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                .format(new java.util.Date());
+        ChatMessage optimisticMessage = new ChatMessage(text, true, time);
+        messages.add(optimisticMessage);
+        chatAdapter.notifyItemInserted(messages.size() - 1);
+        rvMessages.scrollToPosition(messages.size() - 1);
+
+        apiManager.sendMessage(chatId, currentUserId, receiverId, text,
+                new ApiManager.VoidCallback() {
                     @Override public void onSuccess() {
-                        // ChildEventListener will display the message automatically
+                        // Message sent successfully - it will appear on next poll
                     }
+
                     @Override public void onFailure(String errorMessage) {
                         Toast.makeText(ChatActivity.this,
                                 "Failed to send: " + errorMessage,
                                 Toast.LENGTH_SHORT).show();
+                        // Remove optimistic message on failure
+                        messages.remove(optimisticMessage);
+                        chatAdapter.notifyDataSetChanged();
                         etMessage.setText(text); // restore on failure
                     }
                 });
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private String getCurrentTime() {
-        return new java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
-                .format(new java.util.Date());
     }
 }

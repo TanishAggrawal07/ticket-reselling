@@ -78,7 +78,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         private final ImageView ivEventImage;
         private final TextView  tvNoImageLabel;
         private final TextView  tvEventName, tvDate, tvSellerName, tvRating;
-        private final TextView  tvSellingPrice, tvOriginalPrice, tvPricingBadge, tvSellerInitial;
+        private final TextView  tvSellingPrice, tvOriginalPrice, tvPricingBadge, tvSellerInitial, tvSoldBadge;
 
         TicketViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -92,6 +92,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             tvOriginalPrice = itemView.findViewById(R.id.tv_original_price);
             tvPricingBadge  = itemView.findViewById(R.id.tv_pricing_badge);
             tvSellerInitial = itemView.findViewById(R.id.tv_seller_initial);
+            tvSoldBadge = itemView.findViewById(R.id.tv_sold_badge);
 
             itemView.setOnClickListener(v -> {
                 int pos = getAdapterPosition();
@@ -106,7 +107,12 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             tvEventName.setText(ticket.getEventName());
             tvDate.setText(ticket.getDate());
             tvSellerName.setText(ticket.getSellerName());
-            tvRating.setText(String.format("%.1f", ticket.getRating()));
+            if (ticket.getRating() > 0) {
+                tvRating.setText(String.format("%.1f", ticket.getRating()));
+                tvRating.setVisibility(View.VISIBLE);
+            } else {
+                tvRating.setVisibility(View.GONE);
+            }
             tvSellingPrice.setText("₹" + ticket.getSellingPrice());
             tvOriginalPrice.setText("₹" + ticket.getOriginalPrice());
 
@@ -120,14 +126,14 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
 
             // ── Smart pricing badge ───────────────────────────────────────────
             if (ticket.isDiscounted()) {
-                tvPricingBadge.setText("🟢 You save ₹" + ticket.getSavings());
+                tvPricingBadge.setText("You save ₹" + ticket.getSavings());
                 tvPricingBadge.setBackgroundResource(R.drawable.bg_pricing_badge);
                 tvPricingBadge.setTextColor(
                         itemView.getContext().getColor(R.color.success_green));
                 tvOriginalPrice.setPaintFlags(
                         tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
             } else if (ticket.getSellingPrice() > ticket.getOriginalPrice()) {
-                tvPricingBadge.setText("🔥 Limited availability – secure your spot now");
+                tvPricingBadge.setText("Limited availability");
                 tvPricingBadge.setBackgroundResource(R.drawable.bg_pricing_badge_urgent);
                 tvPricingBadge.setTextColor(
                         itemView.getContext().getColor(android.R.color.holo_orange_dark));
@@ -140,6 +146,15 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                         itemView.getContext().getColor(R.color.text_secondary));
                 tvOriginalPrice.setPaintFlags(
                         tvOriginalPrice.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            }
+
+            // ── Sold badge ─────────────────────────────────────────────────────
+            if (tvSoldBadge != null) {
+                if (Ticket.STATUS_SOLD.equals(ticket.getStatus())) {
+                    tvSoldBadge.setVisibility(View.VISIBLE);
+                } else {
+                    tvSoldBadge.setVisibility(View.GONE);
+                }
             }
         }
 

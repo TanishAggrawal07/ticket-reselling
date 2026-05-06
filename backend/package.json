@@ -1,0 +1,42 @@
+{
+  "name": "retix-backend",
+  "version": "1.0.0",
+  "description": "ReTix API backend - Express.js on Vercel with MySQL",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "vercel dev",
+    "seed": "node scripts/seed-database.js",
+    "db:setup": "node -e \"console.log('Run schema.sql in your MySQL database')\"",
+    "test": "jest --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "retix",
+    "tickets",
+    "api",
+    "express",
+    "mysql"
+  ],
+  "author": "ReTix Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

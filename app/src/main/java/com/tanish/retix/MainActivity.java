@@ -1,6 +1,7 @@
 package com.tanish.retix;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,20 +9,25 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.tanish.retix.databinding.ActivityMainBinding;
 
+/**
+ * MainActivity - Main app container with BottomNavigationView.
+ * Hosts Home, Tickets, Wallet, and Profile fragments.
+ * Uses ViewBinding for type-safe view access.
+ */
 public class MainActivity extends AppCompatActivity implements
-        HomeFragment.OnFragmentInteractionListener,
-        ProfileFragment.OnProfileInteractionListener {
+        HomeFragment.OnFragmentInteractionListener {
 
     private static final String PREFS_NAME    = "ReTixPrefs";
-    private static final String KEY_DARK_MODE = "dark_mode_enabled";
+    private static final String KEY_IS_FIRST_TIME = "is_first_time";
+    private static final String KEY_IS_LOGGED_IN = "is_logged_in";
 
-    private BottomNavigationView bottomNavigation;
+    private ActivityMainBinding binding;
     private FragmentManager fragmentManager;
 
     private HomeFragment homeFragment;
-    private SellFragment sellFragment;
+    private TicketsFragment ticketsFragment;
     private WalletFragment walletFragment;
     private ProfileFragment profileFragment;
 
@@ -30,32 +36,55 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Check auth state and route before showing UI
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean isFirstTime = prefs.getBoolean(KEY_IS_FIRST_TIME, true);
+        boolean isLoggedIn = ApiClient.isLoggedIn();
+
+        // Sync local flag with actual token state
+        if (!isLoggedIn && prefs.getBoolean(KEY_IS_LOGGED_IN, false)) {
+            prefs.edit().putBoolean(KEY_IS_LOGGED_IN, false).apply();
+        }
+
+        // Route to appropriate screen if not logged in or first time
+        if (isFirstTime) {
+            startActivity(new Intent(this, OnboardingActivity.class));
+            finish();
+            return;
+        } else if (!isLoggedIn) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+
+        // Initialize ViewBinding
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         initFragments();
         setupBottomNavigation();
 
         if (savedInstanceState == null) {
             loadFragment(homeFragment);
-            bottomNavigation.setSelectedItemId(R.id.nav_home);
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
         }
     }
 
     private void initFragments() {
         homeFragment    = HomeFragment.newInstance();
-        sellFragment    = SellFragment.newInstance();
+        ticketsFragment = TicketsFragment.newInstance();
         walletFragment  = WalletFragment.newInstance();
         profileFragment = ProfileFragment.newInstance();
         fragmentManager = getSupportFragmentManager();
     }
 
     private void setupBottomNavigation() {
-        bottomNavigation = findViewById(R.id.bottom_navigation);
-        bottomNavigation.setOnItemSelectedListener(item -> {
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if      (id == R.id.nav_home)    { loadFragment(homeFragment);    return true; }
-            else if (id == R.id.nav_sell)    { loadFragment(sellFragment);    return true; }
+            else if (id == R.id.nav_tickets)    { loadFragment(ticketsFragment);    return true; }
             else if (id == R.id.nav_wallet)  { loadFragment(walletFragment);  return true; }
             else if (id == R.id.nav_profile) { loadFragment(profileFragment); return true; }
             return false;
@@ -73,14 +102,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSellTicketClick() {
-        bottomNavigation.setSelectedItemId(R.id.nav_sell);
-    }
-
-    /** Settings icon in the Home toolbar → open SettingsActivity */
-    @Override
-    public void onSettingsFromHomeClick() {
-        needsHomeRefresh = true;
-        startActivity(new Intent(this, SettingsActivity.class));
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_tickets);
     }
 
     @Override
@@ -91,32 +113,13 @@ public class MainActivity extends AppCompatActivity implements
         startActivity(intent);
     }
 
-    // ── ProfileFragment.OnProfileInteractionListener ──────────────────────────
-
-    @Override
-    public void onSettingsClick() {
-        needsHomeRefresh = false;
-        startActivity(new Intent(this, SettingsActivity.class));
-    }
-
-    @Override
-    public void onMyListingsClick() {
-        bottomNavigation.setSelectedItemId(R.id.nav_sell);
-    }
-
-    @Override
-    public void onMyPurchasesClick() {
-        bottomNavigation.setSelectedItemId(R.id.nav_wallet);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Switches the bottom navigation to the Home tab and refreshes ticket data.
      * Called by SellFragment after a ticket is successfully listed.
      */
     public void switchToHome() {
-        bottomNavigation.setSelectedItemId(R.id.nav_home);
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
         if (homeFragment != null) homeFragment.refreshData();
     }
 
@@ -127,5 +130,11 @@ public class MainActivity extends AppCompatActivity implements
             homeFragment.refreshData();
             needsHomeRefresh = false;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null;
     }
 }

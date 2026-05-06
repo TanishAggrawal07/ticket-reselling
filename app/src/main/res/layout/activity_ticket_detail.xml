@@ -191,6 +191,22 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Your Listing Badge (shown for own tickets) -->
+                <TextView
+                    android:id="@+id/tv_own_ticket_badge"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/bg_pricing_badge"
+                    android:backgroundTint="@color/accent_blue_light"
+                    android:gravity="center"
+                    android:text="Your Listing"
+                    android:textAllCaps="false"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
                 <!-- Chat button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_chat"
@@ -317,6 +333,25 @@
                     app:elevation="0dp"
                     app:iconTint="@color/accent_blue" />
 
+                <!-- Chat with Buyer button (shown for sold tickets) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_chat_with_buyer"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="@color/success_green"
+                    android:drawableStart="@drawable/ic_chat"
+                    android:drawablePadding="8dp"
+                    android:text="Chat with Buyer"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:cornerRadius="14dp"
+                    app:elevation="0dp"
+                    app:iconTint="@color/white" />
+
                 <!-- Warning card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
@@ -372,21 +407,6 @@
         android:paddingBottom="20dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_confirm_entry"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginBottom="8dp"
-            android:backgroundTint="@color/success_green"
-            android:text="@string/confirm_entry"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:visibility="gone"
-            app:cornerRadius="14dp"
-            app:elevation="0dp" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_buy"
             android:layout_width="match_parent"
             android:layout_height="54dp"
@@ -398,6 +418,15 @@
             android:textStyle="bold"
             app:cornerRadius="14dp"
             app:elevation="0dp" />
+
+        <TextView
+            android:id="@+id/tv_wallet_balance_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -52,11 +52,9 @@
 
             <!-- Seller info card -->
             <com.google.android.material.card.MaterialCardView
+                style="@style/RetixCard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="0dp">
+                android:layout_height="wrap_content">
 
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -7,9 +7,11 @@
     <dimen name="spacing_8">8dp</dimen>
     <dimen name="spacing_12">12dp</dimen>
     <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_18">18dp</dimen>
     <dimen name="spacing_20">20dp</dimen>
     <dimen name="spacing_24">24dp</dimen>
     <dimen name="spacing_28">28dp</dimen>
+    <dimen name="spacing_14">14dp</dimen>
     <dimen name="spacing_32">32dp</dimen>
     <dimen name="spacing_40">40dp</dimen>
     <dimen name="spacing_48">48dp</dimen>
@@ -23,6 +25,8 @@
     <dimen name="radius_lg">18dp</dimen>
     <dimen name="radius_xl">24dp</dimen>
     <dimen name="radius_full">100dp</dimen>
+    <dimen name="corner_radius_large">18dp</dimen>
+    <dimen name="corner_radius_medium">14dp</dimen>
 
     <!-- Component heights -->
     <dimen name="button_height">54dp</dimen>
@@ -35,6 +39,8 @@
     <dimen name="card_elevation">3dp</dimen>
     <dimen name="card_elevation_high">8dp</dimen>
     <dimen name="card_padding">20dp</dimen>
+    <dimen name="elevation_card">2dp</dimen>
+    <dimen name="elevation_small">1dp</dimen>
 
     <!-- Icon sizes -->
     <dimen name="icon_sm">18dp</dimen>
@@ -51,6 +57,18 @@
     <!-- Typography -->
     <dimen name="text_xs">11sp</dimen>
     <dimen name="text_sm">12sp</dimen>
+    <dimen name="text_11">11sp</dimen>
+    <dimen name="text_12">12sp</dimen>
+    <dimen name="text_13">13sp</dimen>
+    <dimen name="text_14">14sp</dimen>
+    <dimen name="text_15">15sp</dimen>
+    <dimen name="text_16">16sp</dimen>
+    <dimen name="text_17">17sp</dimen>
+    <dimen name="text_18">18sp</dimen>
+    <dimen name="text_20">20sp</dimen>
+    <dimen name="text_22">22sp</dimen>
+    <dimen name="text_24">24sp</dimen>
+    <dimen name="text_34">34sp</dimen>
     <dimen name="text_body_sm">13sp</dimen>
     <dimen name="text_body">15sp</dimen>
     <dimen name="text_body_lg">16sp</dimen>

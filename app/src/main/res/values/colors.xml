@@ -48,4 +48,69 @@
     <!-- Wallet card gradient stops -->
     <color name="wallet_card_start">#0A1628</color>
     <color name="wallet_card_end">#1A3A6B</color>
+
+    <!-- Accent Blue Variants -->
+    <color name="accent_blue_pressed">#1A5FCC</color>
+    <color name="accent_blue_deep">#0D3D99</color>
+
+    <!-- Amber / Star Rating -->
+    <color name="amber_star">#F59E0B</color>
+    <color name="amber_light">#FFFBEB</color>
+    <color name="amber_stroke">#FCD34D</color>
+
+    <!-- Green Variants -->
+    <color name="green_online">#4ADE80</color>
+    <color name="green_verified">#16A34A</color>
+
+    <!-- Red Variants -->
+    <color name="red_danger">#EF4444</color>
+    <color name="red_danger_light">#FEF2F2</color>
+    <color name="red_logout">#FF6B6B</color>
+    <color name="red_logout_stroke">#5C3A3A</color>
+    <color name="red_remove_bg">#CCDC2626</color>
+
+    <!-- Status Backgrounds -->
+    <color name="status_held_bg">#FEF3C7</color>
+    <color name="status_processing_bg">#E0E7FF</color>
+    <color name="status_available_bg">#D1FAE5</color>
+    <color name="status_released_bg">#F0FDF4</color>
+
+    <!-- Skeleton / Shimmer -->
+    <color name="skeleton_base">#E2E8F0</color>
+    <color name="skeleton_highlight">#F1F5F9</color>
+
+    <!-- Overlays -->
+    <color name="overlay_dark_88">#DD000000</color>
+    <color name="overlay_dark_80">#CC000000</color>
+    <color name="overlay_dark_60">#99000000</color>
+    <color name="overlay_dark_50">#80000000</color>
+    <color name="overlay_dark_40">#66000000</color>
+
+    <!-- On-image text -->
+    <color name="text_on_image">#CCFFFFFF</color>
+
+    <!-- Chat -->
+    <color name="chat_timestamp_light">#80C4FF</color>
+
+    <!-- Stat Card -->
+    <color name="stat_label_light">#BFDBFE</color>
+
+    <!-- Pricing / Badge -->
+    <color name="pricing_urgent_bg">#FFF7ED</color>
+    <color name="price_chip_bg">#CC0A1628</color>
+
+    <!-- Shimmer dark variants (for profile skeleton) -->
+    <color name="shimmer_dark_base">#1A2744</color>
+    <color name="shimmer_dark_highlight">#263B5C</color>
+    <color name="shimmer_dark_blue_base">#1A3F6B</color>
+    <color name="shimmer_dark_blue_highlight">#2B5A94</color>
+    <color name="shimmer_dark_green_base">#1F5C3F</color>
+    <color name="shimmer_dark_green_highlight">#2D8A5E</color>
+
+    <!-- Profile -->
+    <color name="profile_stroke_blue">#3A5A8C</color>
+
+    <!-- Splash -->
+    <color name="splash_ring_fill">#1A2979FF</color>
+    <color name="splash_ring_stroke">#402979FF</color>
 </resources>

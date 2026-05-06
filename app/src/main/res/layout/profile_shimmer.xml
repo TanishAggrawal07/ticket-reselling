@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Stats cards skeleton — sits below the real header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp">
+
+        <!-- Sold card -->
+        <com.tanish.retix.ShimmerView
+            android:layout_width="0dp"
+            android:layout_height="100dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            app:shimmerCornerRadius="16dp"
+            app:shimmerBaseColor="#1A2744"
+            app:shimmerHighlightColor="#263B5C" />
+
+        <!-- Earned card -->
+        <com.tanish.retix.ShimmerView
+            android:layout_width="0dp"
+            android:layout_height="100dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            app:shimmerCornerRadius="16dp"
+            app:shimmerBaseColor="#1A3F6B"
+            app:shimmerHighlightColor="#2B5A94" />
+
+        <!-- Active card -->
+        <com.tanish.retix.ShimmerView
+            android:layout_width="0dp"
+            android:layout_height="100dp"
+            android:layout_weight="1"
+            app:shimmerCornerRadius="16dp"
+            app:shimmerBaseColor="#1F5C3F"
+            app:shimmerHighlightColor="#2D8A5E" />
+    </LinearLayout>
+
+    <!-- Section label -->
+    <com.tanish.retix.ShimmerView
+        android:layout_width="120dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="12dp"
+        app:shimmerCornerRadius="4dp" />
+
+    <!-- Chart placeholder -->
+    <com.tanish.retix.ShimmerView
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="20dp"
+        app:shimmerCornerRadius="18dp" />
+
+    <!-- Account section label -->
+    <com.tanish.retix.ShimmerView
+        android:layout_width="80dp"
+        android:layout_height="12dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="8dp"
+        app:shimmerCornerRadius="4dp" />
+
+    <!-- Menu card placeholder -->
+    <com.tanish.retix.ShimmerView
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="16dp"
+        app:shimmerCornerRadius="18dp" />
+
+</LinearLayout>
